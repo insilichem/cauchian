@@ -35,6 +35,7 @@ class Controller(object):
         # Flags
         self._basis_set_dialog = None
         self._layers_dialog = None
+        self._mmtypes_dialog = None
         self._modredundant_dialog = None
 
         # Tie everything up
@@ -52,7 +53,8 @@ class Controller(object):
 
         # Button actions
         buttons = ('ui_layers', 'ui_solvent_btn', 'ui_qm_basis_per_atom',
-                   'ui_redundant_btn', 'ui_mm_frcmod_btn', 'ui_mm_types_btn', 'ui_checkpoint_btn')
+                   'ui_redundant_btn', 'ui_mm_frcmod_btn', 'ui_checkpoint_btn',
+                   'ui_mm_set_types_btn')
         for btn in buttons:
             button = getattr(self.gui, btn)
             command = getattr(self, '_cmd' + btn[2:], None)
@@ -78,7 +80,7 @@ class Controller(object):
                      'var_mm_frcmod', 'var_charge_qm', 'var_charge_mm',
                      'var_multiplicity_qm', 'var_multiplicity_mm', 'var_title',
                      'var_checkpoint', 'var_checkpoint_path',
-                     'var_nproc', 'var_memory', 'var_memory_units')
+                     'var_nproc', 'var_memory', 'var_memory_units', 'var_mm_from_mol2')
         for name in variables:
             var = getattr(self.gui, name)
             command = getattr(self, '_trc' + name[3:], None)
@@ -137,7 +139,8 @@ class Controller(object):
         fn, ext = os.path.splitext(path)
         # First, dump GUI state
         with open('{}_state.json'.format(fn), 'w') as f:
-            json.dump(state, f, default=lambda a: None)
+            print(state)
+            json.dump(state, f, default=lambda a: None) #, skipkeys=True
         # Second, export files
         for i, gfile in enumerate(gfiles):
             outpath = '{fn}{i}{ext}'.format(fn=fn, i=i+1 if i else '', ext=ext)
@@ -200,12 +203,55 @@ class Controller(object):
         if path:
             self.gui.var_mm_frcmod.set(path)
 
-    def _cmd_mm_types_btn(self, *args):
-        if self.gui.var_mm_forcefield.get() == 'GAFF':
+    def _cmd_mm_set_types_btn(self, *args):
+        if self._mmtypes_dialog is None:
+            from gui import MMTypesDialog
+            self._mmtypes_dialog = MMTypesDialog(self.gui._mmtypes,
+                                                    master=self.gui.uiMaster())
+        self._mmtypes_dialog.enter()
+
+    """
+    def _cmd_mm_add_charges_btn(self, *args):
+        if self.gui.var_mm_forcefield.get() in ('GAFF', 'MM3'):
             import AddCharge.gui as AC
             d = AC.AddChargesDialog(models=[self.gui.ui_molecules.getvalue()],
                                     chargeModel='AMBER ff99SB')
 
+    def _cmd_mm_types_btn(self, *args):
+        ff = self.gui.var_mm_forcefield.get()
+        menu_option = self.gui.var_mm_from_mol2.get()
+        
+        if menu_option in ['Catch from gaffType attribute', 'Convert from gaffType attrib (GAFF)']:
+            attrib_name = 'gaffType'
+        else:
+            attrib_name = 'mol2type'
+
+        if ff == 'GAFF':
+            for catom in self.gui.ui_molecules.getvalue().atoms:
+                try:
+                    catom.mmType = getattr(catom, attrib_name)
+                except AttributeError:
+                    self.gui.status('Cannot set GAFF types. You have to Add Charges before and Catch from gaffType.', color='red', blankAfter=5)
+                    return
+
+        elif ff == 'MM3':         
+            from pygaussian import MM3_FROM_GAFF
+            from pygaussian import MM3_FROM_UFF
+            for catom in self.gui.ui_molecules.getvalue().atoms:
+                try:
+                    if menu_option == 'Convert from mol2type attrib (UFF)':
+                        catom.mmType = MM3_FROM_UFF[getattr(catom, attrib_name).upper()]
+                    else:
+                        catom.mmType = MM3_FROM_GAFF[getattr(catom, attrib_name)]
+                except AttributeError:
+                    self.gui.status('Cannot set MM3 types. You have to Add Charges before and Convert from gaffType.', color='red', blankAfter=5)
+                    return
+                except KeyError:
+                    self.gui.status('Cannot set MM3 types. There are some unknown atom types.', color='red', blankAfter=5)
+                    return
+
+        self.gui.status('{} atom types have been set!'.format(ff), blankAfter=5)
+    """
 
     def _cmd_checkpoint_btn(self, *args):
         path = asksaveasfilename()
@@ -299,16 +345,16 @@ class Controller(object):
     _trc_qm_basis_ext = _trc_qm_basis_kind
 
     def _trc_mm_forcefield(self, *args):
-        if self.gui.var_mm_forcefield.get() == 'GAFF':
-            self.gui.ui_mm_types_btn['state'] = 'normal'
+        if self.gui.var_mm_forcefield.get() in ('GAFF', 'MM3'):
+            self.gui.ui_mm_set_types_btn['state'] = 'normal'
         else:
-            self.gui.ui_mm_types_btn['state'] = 'disabled'
-
+            self.gui.ui_mm_set_types_btn['state'] = 'disabled'
+                        
     def _trg_molecule_changed(self, *args, **kwargs):
         self.model._bondorder_cache.clear()
         self.model._atoms_map.clear()
         self.gui._layers.clear()
-
+        self.gui._mmtypes.clear()
 
 class Model(object):
 
@@ -362,6 +408,7 @@ class Model(object):
                 infile.add_route_option(token)
 
         replicas = [infile]
+        
         if with_atoms:
             infile.atoms = self.process_atoms(state)
             if with_replicas and state['replicas']:
@@ -373,7 +420,7 @@ class Model(object):
                     for atom, coord in zip(replica.atoms, coordset.xyzArray()):
                         atom.coordinates = tuple(coord)
                     replicas.append(replica)
-
+        
         return replicas
 
     @property
@@ -388,6 +435,7 @@ class Model(object):
         state['molecule'] = self.gui.ui_molecules.getvalue()
         state['layers_flex'] = self.gui._layers.copy()
         state['replicas'] = self.gui.var_molecule_replicas.get()
+        state['mm_types'] = self.gui._mmtypes.copy()
 
         return state
 
@@ -412,8 +460,8 @@ class Model(object):
             if layer is None:
                 raise ValueError('layer must be set if oniom is True')
             gatom.pdb_name = atom.name
-            gatom.atom_type = getattr(atom, 'gaffType',
-                                      chimera2sybyl.get(atom.idatmType, atom.idatmType))
+            gatom.atom_type = getattr(atom, 'mmType',
+                                          chimera2sybyl.get(atom.idatmType, atom.idatmType))
             geometry = chimera.idatm.typeInfo.get(atom.idatmType)
             if geometry is not None:
                 gatom.geometry = geometry.geometry
@@ -440,6 +488,7 @@ class Model(object):
             frozen
             if not layers_flex:
                 raise chimera.UserError('ONIOM layers have not been defined!')
+
         for n, catom in enumerate(chimera_atoms):
             layer, frozen = layers_flex.get(catom, (None, 0))
             kw = dict(oniom=oniom, layer=layer, frozen=int(frozen))

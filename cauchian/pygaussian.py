@@ -18,7 +18,7 @@ if sys.version_info.major == 3:
 
 # QM_BASIS_SETS_EXT = ['d,f-Diffuse (+)', 'p,d,f-Diffuse (++)', 'd,f-Polarization (*)', 'p,d,f-Polarization (**)']
 MM_FORCEFIELDS = {
-    'General': ['Amber', 'GAFF', 'Dreiding', 'UFF'],
+    'General': ['Amber', 'GAFF', 'Dreiding', 'UFF', 'MM3'],
     'Water': ['TIP3P']
 }
 MEM_UNITS = ('KB', 'MB', 'GB', 'TB', 'KW', 'MW', 'GW', 'TW')
@@ -60,6 +60,493 @@ QM_FUNCTIONALS = {
 }
 QM_FUNCTIONALS_ALL = set(f for v in QM_FUNCTIONALS.values() for f in v)
 
+MM_ATTRIBS = ('gaffType', 'mol2type')
+
+MM_TYPES = ('GAFF', 'UFF')
+
+"""
+MM_SET_TYPES = {
+    'MM3': ['Convert from gaffType attrib (GAFF)',
+            'Convert from mol2type attrib (UFF)',
+            'Convert from mol2type attrib (GAFF)'],
+    'GAFF': ['Catch from gaffType attribute',
+            'Catch from mol2type attribute']
+}
+"""
+
+MM3_FROM_UFF = {
+    # MM3 no metal elements (C,H,O,N,halogens,S,P,B,Si,Se,noble gases)          
+    'C_3': '1', # Csp3     
+    'C_22': '22',   # cyclopropane C    
+    'C_56': '56',   # cyclobutane C    
+    'C_2': '2', # Csp2     
+    'C_3C': '3',    # C carbonyl    
+    'C_29': '29',   # radical C    
+    'C_30': '30',   # carbonium ion    
+    'C_38': '38',   # cyclopropene C    
+    'C_57': '57',   # cyclobutene C    
+    'C_113': '113', # Cferrocene-H     
+    'C_114': '114', # Cferrocene-C     
+    'C_R': '2', # Carom     
+    'C_50': '50',   # benzene (localized) C   
+    'C_58': '58',   # cyclobutanone C    
+    'C_67': '67',   # cyclopropanone C    
+    'C_71': '71',   # ketonium C    
+    'C_1': '4', # C sp    
+    'C_68': '68',   # allene C    
+    'C_106': '106', # ketene C    
+    'H_': '5',  # normal terminal H   
+    'H_21': '21',   # O-H alcohol H   
+    'H_23': '23',   # NH amine/imine H   
+    'H_24': '24',   # COOH carboxyl H   
+    'H_28': '28',   # N-H amide H   
+    'H_36': '36',   # deuterium D    
+    'H_44': '44',   # SH thiol H   
+    'H_48': '48',   # ammonium H    
+    'H_73': '73',   # OH enol/phenol H   
+    'H_124': '124', # CH acetylene H   
+    'H_B': '5', # H bridge    
+    'O_3': '6', # O sp3    
+    'O_49': '49',   # epoxy O    
+    'O_69': '69',   # amine oxide O   
+    'O_70': '70',   # ketonium O    
+    'O_75': '75',   # carboxyl O-H    
+    'O_145': '145', # hydroxyamine O    
+    'O_3_Z': '6',   # O sp3    
+    'O_R': '6', # O sp3    
+    'O_41': '41',   # furane O    
+    'O_47': '47',   # carboxylate anion O   
+    'O_77': '77',   # acid C=O    
+    'O_78': '78',   # ester C=O    
+    'O_79': '79',   # amide C=O    
+    'O_80': '80',   # halide C=O    
+    'O_81': '81',   # enone C=O    
+    'O_82': '82',   # anhydride C=O    
+    'O_148': '148', # anhydride (localized) O   
+    'O_149': '149', # anhydride (delocalized) O   
+    'O_2': '7', # O ketone or aldehyde  
+    'O_159': '159', # phosphate O    
+    'O_1': '7', # O sp, M-CO   
+    'N_3': '8', # N sp3    
+    'N_39': '39',   # ammonium N    
+    'N_146': '146', # hydroxyamine N    
+    'N_150': '150', # sp3 hydrazine N   
+    'N_155': '155', # sp3 sulfonamide N   
+    'N_164': '164', # sp3 Li-amide N   
+    'N_R': '37',    # N pyr, -N=C- (deloc)  
+    'N_40': '40',   # pyrrole N    
+    'N_143': '143', # axoxy N (delocalized)   
+    'N_144': '144', # azoxy N (delocalized)   
+    'N_151': '151', # sp2 amide (delocalized)   
+    'N_2': '9', # N sp2)    
+    'N_43': '43',   # azoxy =N-O    
+    'N_45': '45',   # azide center N   
+    'N_46': '46',   # nitro N    
+    'N_72': '72',   # imine N (localized)   
+    'N_107': '107', # azo N (localized)   
+    'N_108': '108', # oxime N    
+    'N_109': '109', # azoxy N (localized)   
+    'N_110': '110', # cationic N of imminium  
+    'N_111': '111', # cationic N of pyridinium  
+    'N_1': '10',    # N sp    
+    'F_': '11', # F general    
+    'CL': '12', # Cl general    
+    'BR': '13', # Br general    
+    'I_': '14', # I general    
+    'S_3+2': '15',  # S sulfide    
+    'S_16': '16',   # sulfonium S    
+    'S_17': '17',   # sulfoxide S    
+    'S_18': '18',   # sulfone S    
+    'S_104': '104', # disulfide bridge S   
+    'S_105': '105', # polysulfide S    
+    'S_3+4': '154', # SX3-R, selected as sulfonamide in MM3
+    'S_3+6': '154', # SO4, selected as sulfonamide in MM3
+    'S_R': '42',    # sp2 thiophene S   
+    'S_2': '74',    # C=S thiocarbonyl    
+    'P_3+3': '25',  # general phosphine    
+    'P_3+5': '25',  # general phosphine    
+    'P_60': '60',   # phosphorus P(V)    
+    'P_153': '153', # phosphate P    
+    'P_3+Q': '25',  # general phosphine    
+    'B_2': '26',    # sp2 B    
+    'B_3': '27',    # sp3 B    
+    'SI3': '19',    # Si general    
+    'SN3': '32',    # Se general    
+    'HE4+4': '51',  # He general    
+    'NE4+4': '52',  # Ne general    
+    'AR4+4': '53',  # Ar general    
+    'KR4+4': '54',  # Kr general    
+    'XE4+4': '55',  # Xe general    
+    
+    # MM3 representative metal and semimetal elements        
+    'LI': '163',    # Li general    
+    'MG3+2': '59',  # Mg general    
+    'GE3': '31',    # Ge general    
+    'PB3': '33',    # Pb (IV)    
+    'SE3+2': '34',  # Se general    
+    'TE3+2': '35',  # Te general    
+    'CA6+2': '125', # Ca general    
+    'SR6+2': '126', # Sr general    
+    'BA6+2': '127', # Ba general    
+    
+    # MM3 no representative metal elements         
+    'FE3+2': '62',  # Fe (III)    
+    'FE_61': '61',  # Fe(II)     
+    'FE6+2': '62',  # Fe (III)    
+    'NI4+2': '63',  # Ni (II)    
+    'NI_64': '64',  # Ni(III)     
+    'CO6+3': '66',  # Co (III)    
+    'CO_65': '65',  # Co(II)     
+    'LA3+3': '128', # La general    
+    'CE6+3': '129', # Ce general    
+    'PR6+3': '130', # Pr general    
+    'ND6+3': '131', # Nd general    
+    'PM6+3': '132', # Pm general    
+    'SM6+3': '133', # Sm general    
+    'EU6+3': '134', # Eu general    
+    'GD6+3': '135', # Gd general    
+    'TB6+3': '136', # Tb general    
+    'DY6+3': '137', # Dy general    
+    'HO6+3': '138', # Ho general    
+    'ER6+3': '139', # Er general    
+    'TM6+3': '140', # Tm general    
+    'YB6+3': '141', # Yb general    
+    'LU6+3': '142', # Lu general    
+   
+    # Transformation of UFF atoms which don't exist in MM3      
+    'BE3+2': '165', # Be     
+    'NA': '166',    # Na     
+    'AL3': '167',   # Al     
+    'K_': '168',    # K     
+    'SC3+3': '169', # Sc     
+    'TI3+4': '170', # Ti     
+    'TI6+4': '170', # Ti     
+    'V_3+5': '171', # V     
+    'CR6+3': '172', # Cr     
+    'MN6+2': '173', # Mn     
+    'CU3+1': '174', # Cu     
+    'ZN3+2': '175', # Zn     
+    'GA3+3': '176', # Ga     
+    'AS3+3': '177', # As     
+    'RB': '178',    # Rb     
+    'Y_3+3': '179', # Y     
+    'ZR3+4': '180', # Zr     
+    'NB3+5': '181', # Nb     
+    'MO6+6': '182', # Mo     
+    'MO3+6': '182', # Mo     
+    'TC6+5': '183', # Tc     
+    'RU6+2': '184', # Ru     
+    'RH6+3': '185', # Rh     
+    'PD4+2': '186', # Pd     
+    'AG1+1': '187', # Ag     
+    'CD3+2': '188', # Cd     
+    'IN3+3': '189', # In     
+    'SB3+3': '190', # Sb     
+    'CS': '191',    # Cs     
+    'HF3+4': '192', # Hf     
+    'TA3+5': '193', # Ta     
+    'W_6+6': '194', # W     
+    'W_3+4': '194', # W     
+    'W_3+6': '194', # W     
+    'RE6+5': '195', # Re     
+    'RE3+7': '195', # Re     
+    'OS6+6': '196', # Os     
+    'IR6+3': '197', # Ir     
+    'PT4+4': '198', # Pt     
+    'AU4+3': '199', # Au     
+    'HG1+2': '200', # Hg     
+    'TL3+3': '201', # Tl     
+    'BI3+3': '202', # Bi     
+    'PO3+2': '203', # Po     
+    'AT': '204',    # At     
+    'RN4+4': '205', # Rn     
+    'FR': '206',    # Fr     
+    'RA6+2': '207', # Ra     
+    'AC6+3': '208', # Ac     
+    'TH6+4': '209', # Th     
+    'PA6+4': '210', # Pa     
+    'U_6+4': '211', # U     
+    'NP6+4': '212', # Np     
+    'PU6+4': '213', # Pu     
+    'AM6+4': '214', # Am     
+    'CM6+3': '215', # Cm     
+    'BK6+3': '216', # Bk     
+    'CF6+3': '217', # Cf     
+    'ES6+3': '218', # Es     
+    'FM6+3': '219', # Fm     
+    'MD6+3': '220', # Md     
+    'NO6+3': '221', # No     
+    'LW6+3': '222' # Lw 
+}
+
+GAFF_DESC = {
+    'c': 'Sp2 C carbonyl group',
+    'c1': 'Sp C',
+    'c2': 'Sp2 C', 
+    'c3': 'Sp3 C',
+    'ca': 'Sp2 C in pure aromatic systems',
+    'cp': 'Head Sp2 C that connect two rings in biphenyl sys.',
+    'cq': 'Head Sp2 C that connect two rings in biphenyl sys. identical to cp',
+    'cc': 'Sp2 carbons in non-pure aromatic systems',
+    'cd': 'Sp2 carbons in non-pure aromatic systems, identical to cc',
+    'ce': 'Inner Sp2 carbons in conjugated systems',
+    'cf': 'Inner Sp2 carbons in conjugated systems, identical to ce',
+    'cg': 'Inner Sp carbons in conjugated systems',
+    'ch': 'Inner Sp carbons in conjugated systems, identical to cg',
+    'cx': 'Sp3 carbons in triangle systems',
+    'cy': 'Sp3 carbons in square systems',
+    'cu': 'Sp2 carbons in triangle systems',
+    'cv': 'Sp2 carbons in square systems',
+    'cz': 'Sp2 carbon in guanidine group',
+    'h1': 'H bonded to aliphatic carbon with 1 electrwd. group',
+    'h2': 'H bonded to aliphatic carbon with 2 electrwd. group',
+    'h3': 'H bonded to aliphatic carbon with 3 electrwd. group',
+    'h4': 'H bonded to non-sp3 carbon with 1 electrwd. group',
+    'h5': 'H bonded to non-sp3 carbon with 2 electrwd. group',
+    'ha': 'H bonded to aromatic carbon',
+    'hc': 'H bonded to aliphatic carbon without electrwd. group',
+    'hn': 'H bonded to nitrogen atoms',
+    'ho': 'Hydroxyl group',
+    'hp': 'H bonded to phosphate',
+    'hs': 'Hydrogen bonded to sulphur',
+    'hw': 'Hydrogen in water',
+    'hx': 'H bonded to C next to positively charged group',
+    'f':  'Fluorine',
+    'cl': 'Chlorine',
+    'br': 'Bromine',
+    'i':  'Iodine',
+    'n':  'Sp2 nitrogen in amide groups',
+    'n1': 'Sp N',
+    'n2': 'Aliphatic Sp2 N with two connected atoms',
+    'n3': 'Sp3 N with three connected atoms',
+    'n4': 'Sp3 N with four connected atoms',
+    'na': 'Sp2 N with three connected atoms',
+    'nb': 'Sp2 N in pure aromatic systems',
+    'nc': 'Sp2 N in non-pure aromatic systems',
+    'nd': 'Sp2 N in non-pure aromatic systems',
+    'ne': 'Inner Sp2 N in conjugated systems',
+    'nf': 'Inner Sp2 N in conjugated systems',
+    'nh': 'Amine N connected one or more aromatic rings',
+    'no': 'Nitro N',
+    'o': 'Oxygen with one connected atom',
+    'oh': 'Oxygen in hydroxyl group',
+    'os': 'Ether and ester oxygen',
+    'ow': 'Oxygen in water',
+    'p2': 'Phosphate with two connected atoms',
+    'p3': 'Phosphate with three connected atoms, such as PH3',
+    'p4': 'Phosphate with three connected atoms, such as O=P(CH3)2',
+    'p5': 'Phosphate with four connected atoms, such as O=P(OH)3',
+    'pb': 'Sp2 P in pure aromatic systems',
+    'pc': 'Sp2 P in non-pure aromatic systems',
+    'pd': 'Sp2 P in non-pure aromatic systems, identical to pc',
+    'pe': 'Inner Sp2 P in conjugated systems',
+    'pf': 'Inner Sp2 P in conjugated systems, identical to pe',
+    'px': 'Special p4 in conjugated systems',
+    'py': 'Special p5 in conjugated systems',
+    's': 'S with one connected atom',
+    's2': 'S with two connected atom, involved at least one double bond',
+    's4': 'S with three connected atoms', 
+    's6': 'S with four connected atoms',
+    'sh': 'Sp3 S connected with hydrogen',
+    'ss': 'Sp3 S in thio-ester and thio-ether',
+    'sx': 'Special s4 in conjugated systems',
+    'sy': 'Special s6 in conjugated systems'
+}
+
+MM3_FROM_ELEMENT = {
+	'Ac': ['208'],
+	'Ag': ['187'],
+	'Al': ['167'],
+	'Am': ['214'],
+	'Ar': ['53'],
+	'As': ['177'],
+	'At': ['204'],
+	'Au': ['199'],
+	'B': ['26', '27'],
+	'Ba': ['127'],
+	'Be': ['165'],
+	'Bi': ['202'],
+	'Bk': ['216'],
+	'Br': ['13'],
+	'C': ['1', '2', '3', '4', '22', '29', '30', '38', '50', '56', '57', '58', '67', '68', '71', '106', '113', '114', '160', '161', '162'],
+	'Ca': ['125'],
+	'Cd': ['188'],
+	'Ce': ['129'],
+	'Cf': ['217'],
+	'Cl': ['12'],
+	'Cm': ['215'],
+	'Co': ['65', '66'],
+	'Cr': ['172'],
+	'Cs': ['191'],
+	'Cu': ['174'],
+	'D': ['36'],
+	'Dy': ['137'],
+	'Er': ['139'],
+	'Es': ['218'],
+	'Eu': ['134'],
+	'F': ['11'],
+	'Fe': ['61', '62'],
+	'Fm': ['219'],
+	'Fr': ['206'],
+	'Ga': ['176'],
+	'Gd': ['135'],
+	'Ge': ['31'],
+	'H': ['5', '21', '23', '24', '28', '44', '48', '73', '124'],
+	'He': ['51'],
+	'Hf': ['192'],
+	'Hg': ['200'],
+	'Ho': ['138'],
+	'I': ['14'],
+	'In': ['189'],
+	'Ir': ['197'],
+	'K': ['168'],
+	'Kr': ['54'],
+	'La': ['128'],
+	'Li': ['163'],
+	'Lu': ['142'],
+	'Lw': ['222'],
+	'Md': ['220'],
+	'Mg': ['59'],
+	'Mn': ['173'],
+	'Mo': ['182'],
+	'N': ['8', '9', '10', '37', '39', '40', '43', '45', '46', '72', '107', '108', '109', '110', '111', '143', '144', '146', '150', '151', '155', '164'],
+	'Na': ['166'],
+	'Nb': ['181'],
+	'Nd': ['131'],
+	'Ne': ['52'],
+	'Ni': ['63', '64'],
+	'No': ['221'],
+	'Np': ['212'],
+	'O': ['6', '7', '41', '47', '49', '69', '70', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100', '101', '102', '103', '115', '116', '117', '118', '119', '120', '121', '145', '148', '149', '159'],
+	'Os': ['196'],
+	'P': ['25', '60', '153'],
+	'Pa': ['210'],
+	'Pb': ['33'],
+	'Pd': ['186'],
+	'Pm': ['132'],
+	'Po': ['203'],
+	'Pr': ['130'],
+	'Pt': ['198'],
+	'Pu': ['213'],
+	'Ra': ['207'],
+	'Rb': ['178'],
+	'Re': ['195'],
+	'Rh': ['185'],
+	'Rn': ['205'],
+	'Ru': ['184'],
+	'S': ['15', '16', '17', '18', '42', '74', '104', '105', '154'],
+	'Sb': ['190'],
+	'Sc': ['169'],
+	'Se': ['34'],
+	'Si': ['19'],
+	'Sm': ['133'],
+	'Sn': ['32'],
+	'Sr': ['126'],
+	'Ta': ['193'],
+	'Tb': ['136'],
+	'Tc': ['183'],
+	'Te': ['35'],
+	'Th': ['209'],
+	'Ti': ['170'],
+	'Tl': ['201'],
+	'Tm': ['140'],
+	'U': ['211'],
+	'V': ['171'],
+	'W': ['194'],
+	'Xe': ['55'],
+	'Y': ['179'],
+	'Yb': ['141'],
+	'Zn': ['175'],
+	'Zr': ['180']
+}
+
+MM3_FROM_GAFF = {
+	'c': ['3', '2'],
+	'c1': ['4'],
+	'c2': ['2', '38', '57'],
+	'c3': ['1', '22', '56'],
+	'ca': ['2'],
+	'cp': ['2'],
+	'cq': ['2'],
+	'cc': ['2'],
+	'cd': ['2'],
+	'ce': ['2'],
+	'cf': ['2'],
+	'cg': ['4'],
+	'ch': ['4'],
+	'cx': ['22'],
+	'cy': ['56'],
+	'cu': ['38'],
+	'cv': ['57'],
+	'cz': ['2'],
+	'h1': ['5'],
+	'h2': ['5'],
+	'h3': ['5'],
+	'h4': ['5'],
+	'h5': ['5'],
+	'ha': ['5'],
+	'hc': ['5', '124'],
+	'hn': ['23', '28', '48'],
+	'ho': ['21', '73'],
+	'hp': ['5'],
+	'hs': ['44'],
+	'hw': ['21'],
+	'hx': ['5'],
+	'f': ['11'],
+	'cl': ['12'],
+	'br': ['13'],
+	'I': ['14'],
+	'n': ['9'],
+	'n1': ['10'],
+	'n2': ['37'],
+	'n3': ['8'],
+	'n4': ['39'],
+	'na': ['8', '40'],
+	'nb': ['8'],
+	'nc': ['37'],
+	'nd': ['37'],
+	'ne': ['37'],
+	'nf': ['37'],
+	'nh': ['8'],
+	'no': ['46'],
+	'o': ['7'],
+	'oh': ['6'],
+	'os': ['6', '41'],
+	'ow': ['6'],
+	'p2': ['60'],
+	'p3': ['25'],
+	'p4': ['25'],
+	'p5': ['60'],
+	'pb': ['60'],
+	'pc': ['60'],
+	'pd': ['60'],
+	'pe': ['60'],
+	'pf': ['60'],
+	'px': ['60'],
+	'py': ['60'],
+	's': ['42'],
+	's2': ['15'],
+	's4': ['15', '17'],
+	's6': ['18'],
+	'sh': ['15'],
+	'ss': ['15', '42', '104'],
+	'sx': ['17'],
+	'sy': ['18']
+}
+
+"""
+(1)		Parameters for p4 are not enough
+(2)     For bond lengty, bond angle and torsional angle parameters, hc and ha 
+        are the generic names of aliphatic and aromatic hydrogen connected 
+        to carbon, respectively.
+(3) 	Defination priority of nitrogen: n>n3, n>n4, n>nh, n2>n, no>n, na>n
+        n4>nh
+(5)     Although the four atom types are same, maybe there are several different
+        parameters correspond to different bond types. You may need to use 
+        additional atom types to apply them correctly (with antechamber package,
+        you can easily do this). 
+(4) 	Polarizabilities: mg2+ 0.120, f- 0.9743
+"""
 
 class GaussianInputFile(object):
 
@@ -592,9 +1079,8 @@ class GaussianAtom(object):
         if value is None:
             self._atom_type = None
             return
-        if not value or value[0] not in ascii_letters:
-            raise ValueError('Atom_type cannot be empty and must start with a letter. '
-                             'Value provided: {}'.format(value))
+        if not value:
+            raise ValueError('Atom_type cannot be empty.')
         self._atom_type = value
 
     @property
