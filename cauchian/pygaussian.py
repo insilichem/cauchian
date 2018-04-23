@@ -1157,8 +1157,9 @@ class MmExtraDefinition(object):
 
     TYPES = ('VDW', 'HRMSTR1', 'HRMBND1', 'AMBTRS')
 
-    def __init__(self, dtype, mmtype, mmtype2=None, mmtype3=None, bond_length=None, 
-                well_depth=None, force_constant=None, angle=None):
+    def __init__(self, dtype, mmtype, mmtype2=None, mmtype3=None, mmtype4=None,
+                bond_length=None, well_depth=None, force_constant=None, 
+                angle=None, idivf=None, pk=None, phase=None, pn=None):
         if dtype.upper() not in self.TYPES:
             raise ValueError('not valid definition type')
 
@@ -1166,10 +1167,15 @@ class MmExtraDefinition(object):
         self.mmtype = mmtype
         self.mmtype2 = mmtype2
         self.mmtype3 = mmtype3
+        self.mmtype4 = mmtype4
         self.bond_length = bond_length
         self.well_depth = well_depth
         self.force_constant = force_constant
         self.angle = angle
+        self.idivf = idivf
+        self.pk = pk
+        self.phase = phase
+        self.pn = pn
 
     def __str__(self):
         kwargs = dict(dtype=self.dtype,
@@ -1186,12 +1192,12 @@ class MmExtraDefinition(object):
         elif self.dtype == 'HrmBnd1':
             return self.mmtype2, self.mmtype3, self.force_constant, self.angle
         elif self.dtype == 'AmbTrs':
-            return self.bond_length,
+            return self.mmtype2, self.mmtype3, self.mmtype4
         else:
             return ()
 
 def import_from_frcmod(path):
-    SECTIONS = ('NONB', 'BOND', 'ANGL') #, 'DIHE')
+    SECTIONS = ('NONB', 'BOND', 'ANGL', 'DIHE')
     section = None
     mm_definitions = []
     with open(path) as inf:
@@ -1220,6 +1226,14 @@ def _create_mm_definition(line, section):
         mm1, mm2, mm3 = args[0].split('-')
         #It is supposed that ANGL section follows the 5 card type (ambermd.org/formats.html)
         definition = MmExtraDefinition('HrmBnd1', mm1, mmtype2=mm2, mmtype3=mm3, force_constant=args[1], angle=args[2])
+    elif section == 'DIHE':
+        mm1, mm2, mm3, mm4 = line[:11].split('-')
+        if mm1 == 'X ':
+            mm1 = '* '
+        if mm4 == 'X ':
+            mm4 = '* '
+        args = line[11:].split()
+        definition = MmExtraDefinition('AmbTrs', mm1, mmtype2=mm2, mmtype3=mm3, mmtype4=mm4, idivf=args[0], pk=args[1], phase=args[2], pn=args[3])
     return definition
 
 if __name__ == '__main__':
