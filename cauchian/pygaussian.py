@@ -144,6 +144,10 @@ class GaussianInputFile(object):
         if self.connectivity:
             sections.append(self.compute_connectivity())
             sections.append('')
+        mm_forcefield_extra = self.mm_forcefield_extra
+        if mm_forcefield_extra:
+            sections.append(mm_forcefield_extra)
+            sections.append('')
         qm_basis_set_extra = self.qm_basis_set_extra
         if qm_basis_set_extra:
             sections.append(qm_basis_set_extra)
@@ -360,6 +364,10 @@ class GaussianInputFile(object):
         if value not in MM_FORCEFIELDS['Water']:
             raise ValueError('Forcefield {} not recognized'.format(value))
         self._mm_water_forcefield = value
+
+    @property
+    def mm_forcefield_extra(self):
+        return '\n'.join(map(str, self._mm_forcefield_extra))
 
     def add_mm_forcefield(self, value):
         if value.endswith('.frcmod') and os.path.isfile(value):
@@ -1145,10 +1153,74 @@ class ModRedundantRestraint(object):
         except IndexError:
             return ''
 
+class MmExtraDefinition(object):
+
+    TYPES = ('VDW', 'HRMSTR1', 'HRMBND1', 'AMBTRS')
+
+    def __init__(self, dtype, mmtype, mmtype2=None, mmtype3=None, bond_length=None, 
+                well_depth=None, force_constant=None, angle=None):
+        if dtype.upper() not in self.TYPES:
+            raise ValueError('not valid definition type')
+
+        self.dtype = dtype
+        self.mmtype = mmtype
+        self.mmtype2 = mmtype2
+        self.mmtype3 = mmtype3
+        self.bond_length = bond_length
+        self.well_depth = well_depth
+        self.force_constant = force_constant
+        self.angle = angle
+
+    def __str__(self):
+        kwargs = dict(dtype=self.dtype,
+                      mmtype=self.mmtype,
+                      args=' '.join(map(str, self._args)))
+        return '{dtype} {mmtype} {args}'.format(**kwargs)
+
+    @property
+    def _args(self):
+        if self.dtype == 'VDW':
+            return self.bond_length, self.well_depth
+        elif self.dtype == 'HrmStr1':
+            return self.mmtype2, self.force_constant, self.bond_length
+        elif self.dtype == 'HrmBnd1':
+            return self.mmtype2, self.mmtype3, self.force_constant, self.angle
+        elif self.dtype == 'AmbTrs':
+            return self.bond_length,
+        else:
+            return ()
 
 def import_from_frcmod(path):
-    return path
+    SECTIONS = ('NONB', 'BOND', 'ANGL') #, 'DIHE')
+    section = None
+    mm_definitions = []
+    with open(path) as inf:
+        for line in inf:
+            if line.strip('\n').upper() in SECTIONS:
+                section = line.strip('\n').upper()
+            elif not line.strip('\n'):
+                section = None
+            elif section:
+                    mm_definitions.append(_create_mm_definition(line, section))
+    return mm_definitions
 
+def _create_mm_definition(line, section):
+    definition = None
+    if section == 'NONB':
+        args = line.split()
+        #It is supposed that NONB section follows the 10A card type (ambermd.org/formats.html)
+        definition = MmExtraDefinition('VDW', args[0], bond_length=args[1], well_depth=args[2])
+    elif section == 'BOND':
+        args = line.split()
+        mm1, mm2 = args[0].split('-')
+        #It is supposed that BOND section follows the 4 card type (ambermd.org/formats.html)
+        definition = MmExtraDefinition('HrmStr1', mm1, mmtype2=mm2, force_constant=args[1], bond_length=args[2])
+    elif section == 'ANGL':
+        args = line.split()
+        mm1, mm2, mm3 = args[0].split('-')
+        #It is supposed that ANGL section follows the 5 card type (ambermd.org/formats.html)
+        definition = MmExtraDefinition('HrmBnd1', mm1, mmtype2=mm2, mmtype3=mm3, force_constant=args[1], angle=args[2])
+    return definition
 
 if __name__ == '__main__':
     atom = GaussianAtom(element='C', coordinates=(10, 10, 10), n=1, atom_type='CT',
