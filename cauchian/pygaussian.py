@@ -1155,7 +1155,7 @@ class ModRedundantRestraint(object):
 
 class MmExtraDefinition(object):
 
-    TYPES = ('VDW', 'HRMSTR1', 'HRMBND1', 'AMBTRS')
+    TYPES = ('VDW', 'HRMSTR1', 'HRMBND1', 'DREITRS')
 
     def __init__(self, dtype, mmtype, mmtype2=None, mmtype3=None, mmtype4=None,
                 bond_length=None, well_depth=None, force_constant=None, 
@@ -1191,8 +1191,8 @@ class MmExtraDefinition(object):
             return self.mmtype2, self.force_constant, self.bond_length
         elif self.dtype == 'HrmBnd1':
             return self.mmtype2, self.mmtype3, self.force_constant, self.angle
-        elif self.dtype == 'AmbTrs':
-            return self.mmtype2, self.mmtype3, self.mmtype4
+        elif self.dtype == 'DreiTrs':
+            return self.mmtype2, self.mmtype3, self.mmtype4, float(self.pk)*2, self.phase, self.pn, float(self.idivf)/2
         else:
             return ()
 
@@ -1204,7 +1204,7 @@ def import_from_frcmod(path):
         for line in inf:
             if line.strip('\n').upper() in SECTIONS:
                 section = line.strip('\n').upper()
-            elif not line.strip('\n'):
+            elif not line.strip():
                 section = None
             elif section:
                     mm_definitions.append(_create_mm_definition(line, section))
@@ -1214,7 +1214,7 @@ def _create_mm_definition(line, section):
     definition = None
     if section == 'NONB':
         args = line.split()
-        #It is supposed that NONB section follows the 10A card type (ambermd.org/formats.html)
+        #It is supposed that NONB section follows the 10B card type (ambermd.org/formats.html)
         definition = MmExtraDefinition('VDW', args[0], bond_length=args[1], well_depth=args[2])
     elif section == 'BOND':
         args = line.split()
@@ -1233,7 +1233,7 @@ def _create_mm_definition(line, section):
         if mm4 == 'X ':
             mm4 = '* '
         args = line[11:].split()
-        definition = MmExtraDefinition('AmbTrs', mm1, mmtype2=mm2, mmtype3=mm3, mmtype4=mm4, idivf=args[0], pk=args[1], phase=args[2], pn=args[3])
+        definition = MmExtraDefinition('DreiTrs', mm1, mmtype2=mm2, mmtype3=mm3, mmtype4=mm4, idivf=args[0], pk=args[1], phase=args[2], pn=args[3])
     return definition
 
 if __name__ == '__main__':
