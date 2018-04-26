@@ -15,13 +15,13 @@ import chimera.tkgui
 from chimera import UserError
 from chimera.baseDialog import ModelessDialog, NotifyDialog
 from chimera.widgets import MoleculeScrolledListBox, SortableTable, MoleculeOptionMenu
+from SimpleSession import registerAttribute
 # Own
 from libtangram.ui import TangramBaseDialog, STYLES
 from core import Controller, Model
 from pygaussian import (MM_FORCEFIELDS, MEM_UNITS, JOB_TYPES, QM_METHODS, QM_FUNCTIONALS,
-                        QM_BASIS_SETS, QM_BASIS_SETS_EXT, ModRedundantRestraint)
-
-
+                        QM_BASIS_SETS, QM_BASIS_SETS_EXT, ModRedundantRestraint, GAFF_DESC, 
+                        MM3_FROM_GAFF, MM3_FROM_ELEMENT, MM_ATTRIBS, MM_TYPES)
 
 def showUI(*args, **kwargs):
     if chimera.nogui:
@@ -70,6 +70,10 @@ class CauchianDialog(TangramBaseDialog):
         self.var_mm_forcefield = tk.StringVar()
         self.var_mm_water_forcefield = tk.StringVar()
         self.var_mm_frcmod = tk.StringVar()
+        self.var_mm_from_mol2 = tk.StringVar()
+
+        # Atom types variables
+        self._mmtypes = {}
 
         # Charges & Multiplicity
         self.var_charge_qm = tk.IntVar()
@@ -188,10 +192,17 @@ class CauchianDialog(TangramBaseDialog):
         self.ui_mm_frcmod = tk.Entry(self.canvas, textvariable=self.var_mm_frcmod)
         self.ui_mm_frcmod_btn = tk.Button(self.canvas, text='...')
 
-        self.ui_mm_types_btn = tk.Button(self.canvas, text='Set MM Atom Types')
+        # Atom types
+        self.ui_mm_set_types_btn = tk.Button(self.canvas, text='Set MM atom types')
+
+        
+        #self.ui_mm_add_charges_btn = tk.Button(self.canvas, text='Add Charges')
+        #self.ui_mm_types_btn = tk.Button(self.canvas, text='Set MM Atom Types')
+        #types_grid = [[self.ui_mm_from_mol2], [self.ui_mm_types_btn]]
 
         mm_grid = [[('Forcefield', self.ui_mm_forcefields), ('Waters', self.ui_mm_water_forcefield)],
-                   [('Frcmod', self.ui_mm_frcmod, self.ui_mm_frcmod_btn), self.ui_mm_types_btn]]
+                   [('Frcmod', self.ui_mm_frcmod, self.ui_mm_frcmod_btn), 
+                   (self.ui_mm_set_types_btn)]]
         self.auto_grid(self.ui_mm_frame, mm_grid)
 
         # Hardware
@@ -600,6 +611,10 @@ class _AtomTableProxy(object):
         self.var_layer.set('')
         self.var_frozen = tk.StringVar()
         self.var_frozen.set('')
+        self.var_mmtype = tk.StringVar()
+        self.var_mmtype.set('')
+        self.var_mmother = tk.StringVar()
+        self.var_mmother.set('')
 
     @property
     def layer(self):
@@ -620,14 +635,51 @@ class _AtomTableProxy(object):
         elif value == 'No':
             self.var_frozen.set('0')
         else:
-            raise chimera.userError('Value for freeze code can only be True or False')
+            raise UserError('Value for freeze code can only be True or False')
 
+    @property
+    def mmtype(self):
+        return self.var_mmtype.get()
+
+    @mmtype.setter
+    def mmtype(self, value):
+        self.var_mmtype.set(str(value))
+
+    @property
+    def mmother(self):
+        return self.var_mmother.get()
+
+    @mmother.setter
+    def mmother(self, value):
+        self.var_mmother.set(str(value))
 
 class _SortableTableWithEntries(SortableTable):
 
     def _createCell(self, hlist, row, col, datum, column):
         contents = column.displayValue(datum)
-        if isinstance(contents, tk.StringVar):
+        
+        if column.title in ['MM type']:
+            entry = Pmw.EntryField(hlist,
+                                   entry_textvariable=contents,
+                                   entry_width=5,
+                                   validate=self._validate_mm,
+                                   **STYLES[Pmw.EntryField])
+            widget = self._widgetData[(datum, column)] = entry
+            hlist.item_create(row, col, itemtype="window", window=entry)
+            return
+            """
+            combo = Pmw.ComboBox(hlist,
+                                 entry_textvariable=contents,
+                                 entry_width=7,
+                                 scrolledlist_items = sorted(GAFF_DESC.keys()),
+                                 **STYLES[Pmw.EntryField])
+            widget = self._widgetData[(datum, column)] = combo
+            hlist.item_create(row, col, itemtype="window", window=combo)                  
+            return
+            """
+        elif column.title in ['Other options']:
+            SortableTable._createCell(self, hlist, row, col, datum, column)
+        elif isinstance(contents, tk.StringVar):
             entry = Pmw.EntryField(hlist,
                                    entry_textvariable=contents,
                                    entry_width=3,
@@ -645,6 +697,11 @@ class _SortableTableWithEntries(SortableTable):
             return Pmw.OK
         return Pmw.PARTIAL
 
+    @staticmethod
+    def _validate_mm(text):
+        if text:
+            return Pmw.OK
+        return Pmw.PARTIAL
 
 #############################
 #
@@ -808,3 +865,137 @@ class ModRedundantDialog(TangramBaseDialog):
         if value.isdigit() or value.strip() == '*' or not value:
             return Pmw.OK
         return Pmw.PARTIAL
+
+#############################
+#
+# MM Atom Types
+#
+#############################
+
+class MMTypesDialog(TangramBaseDialog):
+
+    """
+    Set MM Atom Types on a per-atom basis
+    """
+
+    buttons = ('OK', 'Close')
+
+    def __init__(self, saved_mmtypes=None, *args, **kwargs):
+        #Variables
+        self.var_mm_attrib = tk.StringVar()
+        self.var_mm_orig_type = tk.StringVar()
+
+        # Fire up
+        self.title = 'Set MM atom types'
+        self.atoms2rows = {}
+        self.mmtypes = saved_mmtypes
+        super(MMTypesDialog, self).__init__(with_logo=False, *args, **kwargs)
+        registerAttribute(chimera.Atom, "mmType")
+        if saved_mmtypes:
+            self.restore_dialog(saved_mmtypes['molecule'], saved_mmtypes['atoms'])
+
+    def fill_in_ui(self, *args):
+        self.canvas.columnconfigure(0, weight=1)
+
+        row = 1
+        self.ui_molecule = MoleculeOptionMenu(self.canvas, command=self.populate_table)
+        self.ui_molecule.grid(row=row, padx=5, pady=5, sticky='we')
+        row += 1
+        self.ui_calc_gaff_frame = tk.LabelFrame(self.canvas, text='Calculate gaffType attribute')
+        self.ui_calc_gaff_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_calc_gaff = tk.Button(self.canvas, text='Calc GAFF types', command=self._calc_gaff)
+        toolbar = [[self.ui_calc_gaff]]
+        self.auto_grid(self.ui_calc_gaff_frame, toolbar, padx=3, pady=3, sticky='we')
+        row += 1
+        self.ui_calc_mm_frame = tk.LabelFrame(self.canvas, text='Propose MM Type')
+        self.ui_calc_mm_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_mm_attrib = Pmw.OptionMenu(self.canvas, items=MM_ATTRIBS, initialitem=0,
+                                            menubutton_textvariable=self.var_mm_attrib)
+        self.ui_mm_orig_type = Pmw.OptionMenu(self.canvas, initialitem=0, items=MM_TYPES,
+                                                menubutton_textvariable=self.var_mm_orig_type)
+        self.ui_calc_mm = tk.Button(self.canvas, text='Go!', command=self._calc_mm)
+        toolbar = [['Use attrib', self.ui_mm_attrib, 'which contains', self.ui_mm_orig_type, self.ui_calc_mm]]
+        self.auto_grid(self.ui_calc_mm_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
+        row += 1
+        self.canvas.rowconfigure(row, weight=1)
+        self.ui_table = t = _SortableTableWithEntries(self.canvas)
+        self.ui_table.grid(row=row, padx=5, pady=5, sticky='news')
+        kw = dict(anchor='w', refresh=False)
+        t.addColumn('#', 'serial', format="%d", headerPadX=5, **kw)
+        t.addColumn('Atom', 'atom', format=str, headerPadX=50, **kw)
+        t.addColumn('Element', 'element', headerPadX=5, **kw)
+        t.addColumn('mol2type attrib', 'mol2type', headerPadX=5, **kw)
+        t.addColumn('gaffType attrib', 'gafftype', headerPadX=5, **kw)
+        t.addColumn('MM type', 'var_mmtype', format=lambda a: a, headerPadX=5, **kw)
+        t.addColumn('Other options', 'mmother', format=lambda a: a, headerPadX=10, **kw)
+        if self.ui_molecule.getvalue():
+            self.ui_molecule.invoke()
+        else:
+            t.setData([])
+        t.launch()
+
+    def populate_table(self, molecule):
+        atoms = molecule.atoms
+        data = []
+        mapping = self.atoms2rows[molecule] = {}
+        for atom in atoms:
+            kwargs = dict(atom=atom,
+                          element=atom.element.name,
+                          idatmtype=atom.idatmType,
+                          serial=atom.serialNumber,
+                          mol2type=getattr(atom, 'mol2type', None),
+                          gafftype=getattr(atom, 'gaffType', None),
+                          )
+            mapping[atom] = row = _AtomTableProxy(**kwargs)
+            data.append(row)
+        self.ui_table.setData(data)
+        self.canvas.after(100, self.ui_table.requestFullWidth)
+
+    #Remake
+    def restore_dialog(self, molecule, rows):
+        self.ui_molecule_dropdown.set(molecule)
+        for atom, mmtype, mmother in rows:
+            row = self.atoms2rows[atom]
+            row.mmtype = mmtype
+            row.mmother = mmother
+        self.ui_table.refresh()
+
+    #Remake
+    def export_dialog(self):
+        molecule = self.ui_molecule.getvalue()
+        rows = [(row.atom, row.mmtype, row.mmother) for row in self.ui_table.data]
+        return molecule, rows
+
+    def _calc_gaff(self):
+        import AddCharge.gui as AC
+        d = AC.AddChargesDialog(models=[self.ui_molecule.getvalue()],
+                                chargeModel='AMBER ff99SB', cb=self._cb_calc_gaff)
+
+    def _cb_calc_gaff(self, *args, **kwargs):
+        for row in self.ui_table.data:
+            row.gafftype = getattr(row.atom, 'gaffType', None)
+        self.ui_table.refresh()
+        self.status('GAFF atom types calculated', color='blue', blankAfter=3)
+
+    def _calc_mm(self):
+        for row in self.ui_table.data:
+            try:
+                row.mmtype = MM3_FROM_GAFF[row.gafftype][0]
+                row.mmother = ", ".join(MM3_FROM_GAFF[row.gafftype][1:])
+            except KeyError:
+                row.mmtype = MM3_FROM_ELEMENT[row.element][0]
+                row.mmother = ", ".join(MM3_FROM_ELEMENT[row.element][1:])
+        self.ui_table.refresh()
+
+    def OK(self, *args, **kwargs):
+        self.mmtypes.clear()
+        molecule, rows = self.export_dialog()
+        for i, (atom, mmtype, mmother) in enumerate(rows):
+            if not mmtype:
+                not_filledin = len([1 for row in rows[i+1:] if not row[1]])
+                raise UserError('Atom {} {} no layer defined!'.format(atom,
+                                'and {} atoms more have'.format(not_filledin)
+                                if not_filledin else 'has'))
+            self.mmtypes[atom] = mmtype
+            setattr(atom, 'mmType', mmtype)
+        self.Close()
