@@ -206,7 +206,7 @@ class Controller(object):
     def _cmd_mm_set_types_btn(self, *args):
         if self._mmtypes_dialog is None:
             from gui import MMTypesDialog
-            self._mmtypes_dialog = MMTypesDialog(self.gui._mmtypes,
+            self._mmtypes_dialog = MMTypesDialog(self.gui._mmtypes, self.gui.var_mm_forcefield,
                                                     master=self.gui.uiMaster())
         self._mmtypes_dialog.enter()
 

@@ -880,7 +880,7 @@ class MMTypesDialog(TangramBaseDialog):
 
     buttons = ('OK', 'Close')
 
-    def __init__(self, saved_mmtypes=None, *args, **kwargs):
+    def __init__(self, saved_mmtypes=None, mmforcefield='GAFF', *args, **kwargs):
         #Variables
         self.var_mm_attrib = tk.StringVar()
         self.var_mm_orig_type = tk.StringVar()
@@ -889,6 +889,7 @@ class MMTypesDialog(TangramBaseDialog):
         self.title = 'Set MM atom types'
         self.atoms2rows = {}
         self.mmtypes = saved_mmtypes
+        self.mmforcefield = mmforcefield
         super(MMTypesDialog, self).__init__(with_logo=False, *args, **kwargs)
         registerAttribute(chimera.Atom, "mmType")
         if saved_mmtypes:
@@ -944,7 +945,7 @@ class MMTypesDialog(TangramBaseDialog):
                           idatmtype=atom.idatmType,
                           serial=atom.serialNumber,
                           mol2type=getattr(atom, 'mol2type', None),
-                          gafftype=getattr(atom, 'gaffType', None),
+                          gaffype=getattr(atom, 'gaffType', None),
                           )
             mapping[atom] = row = _AtomTableProxy(**kwargs)
             data.append(row)
@@ -978,13 +979,25 @@ class MMTypesDialog(TangramBaseDialog):
         self.status('GAFF atom types calculated', color='blue', blankAfter=3)
 
     def _calc_mm(self):
+        ff = self.mmforcefield.get()
+        orig = self.var_mm_orig_type.get()
+        attrib = self.var_mm_attrib.get().lower()    
         for row in self.ui_table.data:
-            try:
-                row.mmtype = MM3_FROM_GAFF[row.gafftype][0]
-                row.mmother = ", ".join(MM3_FROM_GAFF[row.gafftype][1:])
-            except KeyError:
-                row.mmtype = MM3_FROM_ELEMENT[row.element][0]
-                row.mmother = ", ".join(MM3_FROM_ELEMENT[row.element][1:])
+            if ff == 'GAFF' and orig == 'GAFF':
+                row.mmtype = getattr(row, attrib)
+            elif ff == 'MM3' and orig == 'GAFF':
+                try:
+                    row.mmtype = MM3_FROM_GAFF[getattr(row, attrib)][0]
+                    row.mmother = ", ".join(MM3_FROM_GAFF[getattr(row, attrib)][1:])
+                except KeyError:
+                    row.mmtype = MM3_FROM_ELEMENT[row.element][0]
+                    row.mmother = ", ".join(MM3_FROM_ELEMENT[row.element][1:])
+            elif ff == 'MM3' and orig == 'UFF':
+                try:
+                    row.mmtype = MM3_FROM_UFF[getattr(row, attrib)]
+                except KeyError:
+                    row.mmtype = MM3_FROM_ELEMENT[row.element][0]
+                    row.mmother = ", ".join(MM3_FROM_ELEMENT[row.element][1:])
         self.ui_table.refresh()
 
     def OK(self, *args, **kwargs):
