@@ -912,7 +912,7 @@ class MMTypesDialog(TangramBaseDialog):
         self.ui_calc_mm_frame.grid(row=row, padx=5, pady=5, sticky='we')
         self.ui_mm_attrib = Pmw.OptionMenu(self.canvas, items=MM_ATTRIBS, initialitem=0,
                                             menubutton_textvariable=self.var_mm_attrib)
-        self.ui_mm_orig_type = Pmw.OptionMenu(self.canvas, initialitem=0, items=MM_TYPES,
+        self.ui_mm_orig_type = Pmw.OptionMenu(self.canvas, initialitem=0, items=MM_TYPES.keys(),
                                                 menubutton_textvariable=self.var_mm_orig_type)
         self.ui_calc_mm = tk.Button(self.canvas, text='Go!', command=self._calc_mm)
         toolbar = [['Use attrib', self.ui_mm_attrib, 'which contains', self.ui_mm_orig_type, self.ui_calc_mm]]
@@ -985,20 +985,24 @@ class MMTypesDialog(TangramBaseDialog):
         for row in self.ui_table.data:
             if ff == 'GAFF' and orig == 'GAFF':
                 row.mmtype = getattr(row, attrib)
-            elif ff == 'MM3' and orig == 'GAFF':
+            elif ff == 'MM3':
                 try:
-                    row.mmtype = MM3_FROM_GAFF[getattr(row, attrib)][0]
-                    row.mmother = ", ".join(MM3_FROM_GAFF[getattr(row, attrib)][1:])
+                    row.mmtype = MM_TYPES[orig][getattr(row, attrib).upper()][ff][0]
+                    row.mmother = ", ".join(MM_TYPES[orig][getattr(row, attrib).upper()][ff][1:])
                 except KeyError:
-                    row.mmtype = MM3_FROM_ELEMENT[row.element][0]
-                    row.mmother = ", ".join(MM3_FROM_ELEMENT[row.element][1:])
-            elif ff == 'MM3' and orig == 'UFF':
-                try:
-                    row.mmtype = MM3_FROM_UFF[getattr(row, attrib)]
-                except KeyError:
-                    row.mmtype = MM3_FROM_ELEMENT[row.element][0]
-                    row.mmother = ", ".join(MM3_FROM_ELEMENT[row.element][1:])
+                    #Valorate if put the Element conversion
+                    row.mmtype = ''
+                    row.mmother = ''
         self.ui_table.refresh()
+
+    def _plausible_type(mm_dict, types_list):
+        max_matches, plausible_type = 0, None
+        types_list = [x.upper() for x in types_list]
+        for t in mm_dict.keys():
+            matches = set(mm_dict[t].keys()).intersection(set(types_list))
+            if len(matches) > max_matches:
+                max_matches, plausible_type = len(matches), t
+        return plausible_type
 
     def OK(self, *args, **kwargs):
         self.mmtypes.clear()
