@@ -13,7 +13,7 @@ from string import ascii_letters
 # Chimera stuff
 import chimera
 import chimera.tkgui
-from chimera import UserError
+from chimera import UserError, Element
 from chimera.baseDialog import ModelessDialog, NotifyDialog
 from chimera.widgets import MoleculeScrolledListBox, SortableTable, MoleculeOptionMenu
 from SimpleSession import registerAttribute
@@ -607,7 +607,7 @@ class _AtomTableProxy(object):
         self.var_frozen = tk.StringVar()
         self.var_frozen.set('')
         self.var_element = tk.StringVar()
-        self.var_element.set(element)
+        self.var_element.set(self.element)
         self.var_mmtype = tk.StringVar()
         self.var_mmtype.set('')
         self.var_mmother = tk.StringVar()
@@ -634,6 +634,14 @@ class _AtomTableProxy(object):
         else:
             raise UserError('Value for freeze code can only be True or False')
 
+    @property
+    def v_element(self):
+        return self.var_element.get()
+
+    @v_element.setter
+    def v_element(self, value):
+        self.var_element.set(str(value))
+    
     @property
     def mmtype(self):
         return self.var_mmtype.get()
@@ -938,9 +946,9 @@ class MMTypesDialog(TangramBaseDialog):
         kw = dict(anchor='w', refresh=False)
         t.addColumn('#', 'serial', format="%d", headerPadX=5, **kw)
         t.addColumn('Atom', 'atom', format=str, headerPadX=50, **kw)
-        t.addColumn('Charge', 'charge', format=str, headerPadX=5, **kw)
-        t.addColumn('mol2type attrib', 'mol2type', headerPadX=5, **kw)
-        t.addColumn('gaffType attrib', 'gafftype', headerPadX=5, **kw)
+        t.addColumn('charge', 'charge', format=str, headerPadX=5, **kw)
+        t.addColumn('mol2type', 'mol2type', headerPadX=5, **kw)
+        t.addColumn('gaffType', 'gafftype', headerPadX=5, **kw)
         t.addColumn('element', 'var_element', format=lambda a: a, headerPadX=5, **kw)
         t.addColumn('MM type', 'var_mmtype', format=lambda a: a, headerPadX=5, **kw)
         t.addColumn('Other options', 'mmother', format=lambda a: a, headerPadX=10, **kw)
@@ -959,8 +967,7 @@ class MMTypesDialog(TangramBaseDialog):
                           charge=atom.charge,
                           mol2type=getattr(atom, 'mol2type', None),
                           gafftype=getattr(atom, 'gaffType', None),
-                          element=atom.element.name,
-                          )
+                          element=atom.element.name)
             mapping[atom] = row = _AtomTableProxy(**kwargs)
             data.append(row)
         self.ui_table.setData(data)
@@ -977,7 +984,7 @@ class MMTypesDialog(TangramBaseDialog):
     #Remake
     def export_dialog(self):
         molecule = self.ui_molecule.getvalue()
-        rows = [(row.atom, row.mmtype) for row in self.ui_table.data]
+        rows = [(row.atom, (row.mmtype, row.v_element)) for row in self.ui_table.data]
         return molecule, rows
 
     def _frcmod_btn(self, *args):
@@ -1029,7 +1036,7 @@ class MMTypesDialog(TangramBaseDialog):
     def OK(self, *args, **kwargs):
         self.mmtypes.clear()
         molecule, rows = self.export_dialog()
-        for i, (atom, mmtype) in enumerate(rows):
+        for i, (atom, (mmtype, v_element)) in enumerate(rows):
             if not mmtype:
                 not_filledin = len([1 for row in rows[i+1:] if not row[1]])
                 raise UserError('Atom {} {} no type defined!'.format(atom,
@@ -1042,7 +1049,7 @@ class MMTypesDialog(TangramBaseDialog):
                                 'and {} atoms more have'.format(not_filledin)
                                 if not_filledin else 'has'))
             """
-            self.mmtypes[atom] = mmtype
+            self.mmtypes[atom] = (mmtype, v_element)
             setattr(atom, 'mmType', mmtype)
-            #atom.element.name = element
+            atom.element = Element(v_element)
         self.Close()
