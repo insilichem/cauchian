@@ -5,6 +5,7 @@
 from __future__ import print_function, division
 # Python stdlib
 import Tkinter as tk
+from tkFileDialog import askopenfilename
 import Pmw
 from multiprocessing import cpu_count
 from random import choice
@@ -183,14 +184,9 @@ class CauchianDialog(TangramBaseDialog):
 
         # MM Configuration
         self.ui_mm_frame = tk.LabelFrame(self.canvas, text='MM Settings')
-        self.ui_mm_forcefields = Pmw.OptionMenu(self.canvas, initialitem=0,
-                                                items=MM_FORCEFIELDS['General'],
-                                                menubutton_textvariable=self.var_mm_forcefield)
         self.ui_mm_water_forcefield = Pmw.OptionMenu(self.canvas, initialitem=0,
                                                 items=MM_FORCEFIELDS['Water'],
                                                 menubutton_textvariable=self.var_mm_water_forcefield)
-        self.ui_mm_frcmod = tk.Entry(self.canvas, textvariable=self.var_mm_frcmod)
-        self.ui_mm_frcmod_btn = tk.Button(self.canvas, text='...')
 
         # Atom types
         self.ui_mm_set_types_btn = tk.Button(self.canvas, text='Set MM atom types')
@@ -200,9 +196,8 @@ class CauchianDialog(TangramBaseDialog):
         #self.ui_mm_types_btn = tk.Button(self.canvas, text='Set MM Atom Types')
         #types_grid = [[self.ui_mm_from_mol2], [self.ui_mm_types_btn]]
 
-        mm_grid = [[('Forcefield', self.ui_mm_forcefields), ('Waters', self.ui_mm_water_forcefield)],
-                   [('Frcmod', self.ui_mm_frcmod, self.ui_mm_frcmod_btn), 
-                   (self.ui_mm_set_types_btn)]]
+        mm_grid = [[('Waters', self.ui_mm_water_forcefield)],
+                   [(self.ui_mm_set_types_btn)]]
         self.auto_grid(self.ui_mm_frame, mm_grid)
 
         # Hardware
@@ -611,6 +606,8 @@ class _AtomTableProxy(object):
         self.var_layer.set('')
         self.var_frozen = tk.StringVar()
         self.var_frozen.set('')
+        self.var_element = tk.StringVar()
+        self.var_element.set(element)
         self.var_mmtype = tk.StringVar()
         self.var_mmtype.set('')
         self.var_mmother = tk.StringVar()
@@ -658,7 +655,7 @@ class _SortableTableWithEntries(SortableTable):
     def _createCell(self, hlist, row, col, datum, column):
         contents = column.displayValue(datum)
         
-        if column.title in ['MM type']:
+        if column.title in ['MM type', 'element']:
             entry = Pmw.EntryField(hlist,
                                    entry_textvariable=contents,
                                    entry_width=5,
@@ -880,7 +877,8 @@ class MMTypesDialog(TangramBaseDialog):
 
     buttons = ('OK', 'Close')
 
-    def __init__(self, saved_mmtypes=None, mmforcefield='GAFF', *args, **kwargs):
+    def __init__(self, saved_mmtypes=None, mmforcefield='GAFF', 
+                mmfrcmod='', *args, **kwargs):
         #Variables
         self.var_mm_attrib = tk.StringVar()
         self.var_mm_orig_type = tk.StringVar()
@@ -890,6 +888,7 @@ class MMTypesDialog(TangramBaseDialog):
         self.atoms2rows = {}
         self.mmtypes = saved_mmtypes
         self.mmforcefield = mmforcefield
+        self.mmfrcmod = mmfrcmod
         super(MMTypesDialog, self).__init__(with_logo=False, *args, **kwargs)
         registerAttribute(chimera.Atom, "mmType")
         if saved_mmtypes:
@@ -899,14 +898,29 @@ class MMTypesDialog(TangramBaseDialog):
         self.canvas.columnconfigure(0, weight=1)
 
         row = 1
+        self.ui_mol_frame = tk.Frame(self.canvas)
+        self.ui_mol_frame.grid(row=row, padx=5, pady=5, sticky='we')
         self.ui_molecule = MoleculeOptionMenu(self.canvas, command=self.populate_table)
         self.ui_molecule.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_mm_forcefields = Pmw.OptionMenu(self.canvas, initialitem=0,
+                                                items=MM_FORCEFIELDS['General'],
+                                                menubutton_textvariable=self.mmforcefield)
+        toolbar = [[self.ui_molecule, 'Forcefield', self.ui_mm_forcefields]]
+        self.auto_grid(self.ui_mol_frame, toolbar, padx=3, pady=3, sticky='we')
         row += 1
-        self.ui_calc_gaff_frame = tk.LabelFrame(self.canvas, text='Calculate gaffType attribute')
-        self.ui_calc_gaff_frame.grid(row=row, padx=5, pady=5, sticky='we')
-        self.ui_calc_gaff = tk.Button(self.canvas, text='Calc GAFF types', command=self._calc_gaff)
-        toolbar = [[self.ui_calc_gaff]]
-        self.auto_grid(self.ui_calc_gaff_frame, toolbar, padx=3, pady=3, sticky='we')
+        self.ui_frcmod_frame = tk.LabelFrame(self.canvas, text='Introduce .frcmod files')
+        self.ui_frcmod_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_mm_frcmod = tk.Entry(self.canvas, textvariable=self.mmfrcmod)
+        self.ui_mm_frcmod_btn = tk.Button(self.canvas, text='...', command=self._frcmod_btn)
+        toolbar = [[self.ui_mm_frcmod, self.ui_mm_frcmod_btn]]
+        self.auto_grid(self.ui_frcmod_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
+        row += 1
+        self.ui_calc_attrib_frame = tk.LabelFrame(self.canvas, text='Calculate attributes')
+        self.ui_calc_attrib_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_calc_gaff = tk.Button(self.canvas, text='Add charge and gaffType attribs', command=self._calc_gaff)
+        self.ui_calc_element = tk.Button(self.canvas, text='Update element attrib', command=self._calc_element)
+        toolbar = [[self.ui_calc_gaff, self.ui_calc_element]]
+        self.auto_grid(self.ui_calc_attrib_frame, toolbar, padx=3, pady=3, sticky='we')
         row += 1
         self.ui_calc_mm_frame = tk.LabelFrame(self.canvas, text='Propose MM Type')
         self.ui_calc_mm_frame.grid(row=row, padx=5, pady=5, sticky='we')
@@ -924,9 +938,10 @@ class MMTypesDialog(TangramBaseDialog):
         kw = dict(anchor='w', refresh=False)
         t.addColumn('#', 'serial', format="%d", headerPadX=5, **kw)
         t.addColumn('Atom', 'atom', format=str, headerPadX=50, **kw)
-        t.addColumn('Element', 'element', headerPadX=5, **kw)
+        t.addColumn('Charge', 'charge', format=str, headerPadX=5, **kw)
         t.addColumn('mol2type attrib', 'mol2type', headerPadX=5, **kw)
         t.addColumn('gaffType attrib', 'gafftype', headerPadX=5, **kw)
+        t.addColumn('element', 'var_element', format=lambda a: a, headerPadX=5, **kw)
         t.addColumn('MM type', 'var_mmtype', format=lambda a: a, headerPadX=5, **kw)
         t.addColumn('Other options', 'mmother', format=lambda a: a, headerPadX=10, **kw)
         if self.ui_molecule.getvalue():
@@ -941,11 +956,10 @@ class MMTypesDialog(TangramBaseDialog):
         mapping = self.atoms2rows[molecule] = {}
         for atom in atoms:
             kwargs = dict(atom=atom,
-                          element=atom.element.name,
-                          idatmtype=atom.idatmType,
-                          serial=atom.serialNumber,
+                          charge=atom.charge,
                           mol2type=getattr(atom, 'mol2type', None),
-                          gaffype=getattr(atom, 'gaffType', None),
+                          gafftype=getattr(atom, 'gaffType', None),
+                          element=atom.element.name,
                           )
             mapping[atom] = row = _AtomTableProxy(**kwargs)
             data.append(row)
@@ -955,17 +969,24 @@ class MMTypesDialog(TangramBaseDialog):
     #Remake
     def restore_dialog(self, molecule, rows):
         self.ui_molecule_dropdown.set(molecule)
-        for atom, mmtype, mmother in rows:
+        for atom, mmtype in rows:
             row = self.atoms2rows[atom]
             row.mmtype = mmtype
-            row.mmother = mmother
         self.ui_table.refresh()
 
     #Remake
     def export_dialog(self):
         molecule = self.ui_molecule.getvalue()
-        rows = [(row.atom, row.mmtype, row.mmother) for row in self.ui_table.data]
+        rows = [(row.atom, row.mmtype) for row in self.ui_table.data]
         return molecule, rows
+
+    def _frcmod_btn(self, *args):
+        path = askopenfilename(filetypes=[('Frcmod', '*.frcmod'), ('All files', '*')])
+        if path:
+            self.mmfrcmod.set(path)
+
+    def _calc_element(self):
+        pass
 
     def _calc_gaff(self):
         import AddCharge.gui as AC
@@ -974,6 +995,7 @@ class MMTypesDialog(TangramBaseDialog):
 
     def _cb_calc_gaff(self, *args, **kwargs):
         for row in self.ui_table.data:
+            row.charge = getattr(row.atom, 'charge', None)
             row.gafftype = getattr(row.atom, 'gaffType', None)
         self.ui_table.refresh()
         self.status('GAFF atom types calculated', color='blue', blankAfter=3)
@@ -1007,12 +1029,20 @@ class MMTypesDialog(TangramBaseDialog):
     def OK(self, *args, **kwargs):
         self.mmtypes.clear()
         molecule, rows = self.export_dialog()
-        for i, (atom, mmtype, mmother) in enumerate(rows):
+        for i, (atom, mmtype) in enumerate(rows):
             if not mmtype:
                 not_filledin = len([1 for row in rows[i+1:] if not row[1]])
-                raise UserError('Atom {} {} no layer defined!'.format(atom,
+                raise UserError('Atom {} {} no type defined!'.format(atom,
                                 'and {} atoms more have'.format(not_filledin)
                                 if not_filledin else 'has'))
+            """
+            if not element:
+                not_filledin = len([1 for row in rows[i+1:] if not row[1]])
+                raise UserError('Atom {} {} no element defined!'.format(atom,
+                                'and {} atoms more have'.format(not_filledin)
+                                if not_filledin else 'has'))
+            """
             self.mmtypes[atom] = mmtype
             setattr(atom, 'mmType', mmtype)
+            #atom.element.name = element
         self.Close()

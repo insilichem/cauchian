@@ -1386,7 +1386,10 @@ class GaussianInputFile(object):
 
     @property
     def mm_forcefield_extra(self):
-        return '\n'.join(map(str, self._mm_forcefield_extra))
+        if self._mm_forcefield_extra:
+            return '\n'.join(map(str, self._mm_forcefield_extra))
+        else:
+            return ''
 
     def add_mm_forcefield(self, value):
         if value.endswith('.frcmod') and os.path.isfile(value):

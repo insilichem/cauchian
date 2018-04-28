@@ -53,8 +53,7 @@ class Controller(object):
 
         # Button actions
         buttons = ('ui_layers', 'ui_solvent_btn', 'ui_qm_basis_per_atom',
-                   'ui_redundant_btn', 'ui_mm_frcmod_btn', 'ui_checkpoint_btn',
-                   'ui_mm_set_types_btn')
+                   'ui_redundant_btn', 'ui_checkpoint_btn','ui_mm_set_types_btn')
         for btn in buttons:
             button = getattr(self.gui, btn)
             command = getattr(self, '_cmd' + btn[2:], None)
@@ -65,7 +64,7 @@ class Controller(object):
         with_callback = ('ui_job', 'ui_job_options', 'ui_calculation',
                          'ui_qm_methods', 'ui_qm_functional_type',
                          'ui_qm_functionals', 'ui_qm_basis_kind', 'ui_qm_basis_ext',
-                         'ui_mm_forcefields', 'ui_mm_water_forcefield', 'ui_memory_units')
+                         'ui_mm_water_forcefield', 'ui_memory_units')
         for name in with_callback:
             item = getattr(self.gui, name)
             command = getattr(self, '_cb' + name[2:], None)
@@ -198,16 +197,11 @@ class Controller(object):
                                                     master=self.gui.uiMaster())
         self._basis_set_dialog.enter()
 
-    def _cmd_mm_frcmod_btn(self, *args):
-        path = askopenfilename(filetypes=[('Frcmod', '*.frcmod'), ('All files', '*')])
-        if path:
-            self.gui.var_mm_frcmod.set(path)
-
     def _cmd_mm_set_types_btn(self, *args):
         if self._mmtypes_dialog is None:
             from gui import MMTypesDialog
             self._mmtypes_dialog = MMTypesDialog(self.gui._mmtypes, self.gui.var_mm_forcefield,
-                                                    master=self.gui.uiMaster())
+                                                self.gui.var_mm_frcmod, master=self.gui.uiMaster())
         self._mmtypes_dialog.enter()
 
     """
@@ -285,17 +279,13 @@ class Controller(object):
     def _trc_calculation(self, *args):
         value = self.gui.var_calculation.get()
         if value == 'ONIOM':
-            self.gui.ui_mm_forcefields['menubutton_state'] = 'normal'
+            self.gui.ui_mm_set_types_btn['state'] = 'normal'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'normal'
-            self.gui.ui_mm_frcmod['state'] = 'normal'
-            self.gui.ui_mm_frcmod_btn['state'] = 'normal'
             self.gui.ui_charges_mm['state'] = 'normal'
             self.gui.ui_multiplicity_mm['state'] = 'normal'
         else:  # == QM
-            self.gui.ui_mm_forcefields['menubutton_state'] = 'disabled'
+            self.gui.ui_mm_set_types_btn['state'] = 'disabled'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'disabled'
-            self.gui.ui_mm_frcmod['state'] = 'disabled'
-            self.gui.ui_mm_frcmod_btn['state'] = 'disabled'
             self.gui.ui_charges_mm['state'] = 'disabled'
             self.gui.ui_multiplicity_mm['state'] = 'disabled'
 
@@ -343,12 +333,6 @@ class Controller(object):
         if basis:
             self.gui.var_qm_basis_set.set('{}{}'.format(basis, ext if ext else ''))
     _trc_qm_basis_ext = _trc_qm_basis_kind
-
-    def _trc_mm_forcefield(self, *args):
-        if self.gui.var_mm_forcefield.get() in ('GAFF', 'MM3'):
-            self.gui.ui_mm_set_types_btn['state'] = 'normal'
-        else:
-            self.gui.ui_mm_set_types_btn['state'] = 'disabled'
                         
     def _trg_molecule_changed(self, *args, **kwargs):
         self.model._bondorder_cache.clear()
