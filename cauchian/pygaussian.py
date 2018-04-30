@@ -1168,6 +1168,7 @@ class GaussianInputFile(object):
             sections.append('')
         mm_forcefield_extra = self.mm_forcefield_extra
         if mm_forcefield_extra:
+            sections.append('')
             sections.append(mm_forcefield_extra)
             sections.append('')
         qm_basis_set_extra = self.qm_basis_set_extra
