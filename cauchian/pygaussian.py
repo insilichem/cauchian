@@ -167,7 +167,6 @@ MM_TYPES = {
         'CW': {'element': 'C'},
         'CV': {'element': 'C'},
         'CR': {'element': 'C'},
-        'CX': {'element': 'C'},
         'CY': {'element': 'C'},
         'CD': {'element': 'C'},
         'N': {'element': 'N'},
