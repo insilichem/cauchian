@@ -914,7 +914,7 @@ class MMTypesDialog(TangramBaseDialog):
                                                 items=MM_FORCEFIELDS['General'],
                                                 menubutton_textvariable=self.mmforcefield)
         toolbar = [[self.ui_molecule, 'Forcefield', self.ui_mm_forcefields]]
-        self.auto_grid(self.ui_mol_frame, toolbar, padx=3, pady=3, sticky='we')
+        self.auto_grid(self.ui_mol_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
         row += 1
         self.ui_frcmod_frame = tk.LabelFrame(self.canvas, text='Introduce .frcmod files')
         self.ui_frcmod_frame.grid(row=row, padx=5, pady=5, sticky='we')
@@ -928,7 +928,7 @@ class MMTypesDialog(TangramBaseDialog):
         self.ui_calc_gaff = tk.Button(self.canvas, text='Add charge and gaffType attribs', command=self._calc_gaff)
         self.ui_calc_element = tk.Button(self.canvas, text='Update element attrib', command=self._calc_element)
         toolbar = [[self.ui_calc_gaff, self.ui_calc_element]]
-        self.auto_grid(self.ui_calc_attrib_frame, toolbar, padx=3, pady=3, sticky='we')
+        self.auto_grid(self.ui_calc_attrib_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
         row += 1
         self.ui_calc_mm_frame = tk.LabelFrame(self.canvas, text='Propose MM Type')
         self.ui_calc_mm_frame.grid(row=row, padx=5, pady=5, sticky='we')
@@ -964,7 +964,7 @@ class MMTypesDialog(TangramBaseDialog):
         mapping = self.atoms2rows[molecule] = {}
         for atom in atoms:
             kwargs = dict(atom=atom,
-                          charge=atom.charge,
+                          charge=getattr(atom, 'charge', None),
                           mol2type=getattr(atom, 'mol2type', None),
                           gafftype=getattr(atom, 'gaffType', None),
                           element=atom.element.name)
@@ -993,7 +993,22 @@ class MMTypesDialog(TangramBaseDialog):
             self.mmfrcmod.set(path)
 
     def _calc_element(self):
-        pass
+        molecule = self.ui_molecule.getvalue()
+        mol2_types = [getattr(atom, 'mol2type', '') for atom in molecule.atoms]
+        gaff_types = [getattr(atom, 'gaffType', '') for atom in molecule.atoms]
+        mol2_plausible = self._plausible_type(MM_TYPES, mol2_types)
+        gaff_plausible = self._plausible_type(MM_TYPES, gaff_types)
+        for row in self.ui_table.data:
+            try:
+                row.v_element =  MM_TYPES[mol2_plausible][getattr(row.atom, 'mol2type').upper()]['element']
+            except:
+                try:
+                    row.v_element = MM_TYPES[gaff_plausible][getattr(row.atom, 'gaffType').upper()]['element']
+                except:
+                    row.v_element = ''
+        self.ui_table.refresh()
+        self.status('Atom elements updated', color='blue', blankAfter=3)
+        
 
     def _calc_gaff(self):
         import AddCharge.gui as AC
@@ -1012,8 +1027,8 @@ class MMTypesDialog(TangramBaseDialog):
         orig = self.var_mm_orig_type.get()
         attrib = self.var_mm_attrib.get().lower()    
         for row in self.ui_table.data:
-            if ff == 'GAFF' and orig == 'GAFF':
-                row.mmtype = getattr(row, attrib)
+            if ff == orig:
+                row.mmtype = getattr(row, attrib, '').upper()
             elif ff == 'MM3':
                 try:
                     row.mmtype = MM_TYPES[orig][getattr(row, attrib).upper()][ff][0]
@@ -1024,13 +1039,15 @@ class MMTypesDialog(TangramBaseDialog):
                     row.mmother = ''
         self.ui_table.refresh()
 
-    def _plausible_type(mm_dict, types_list):
+    def _plausible_type(self, mm_dict, types_list):
         max_matches, plausible_type = 0, None
         types_list = [x.upper() for x in types_list]
         for t in mm_dict.keys():
             matches = set(mm_dict[t].keys()).intersection(set(types_list))
+
             if len(matches) > max_matches:
                 max_matches, plausible_type = len(matches), t
+        print(plausible_type)
         return plausible_type
 
     def OK(self, *args, **kwargs):
@@ -1042,13 +1059,11 @@ class MMTypesDialog(TangramBaseDialog):
                 raise UserError('Atom {} {} no type defined!'.format(atom,
                                 'and {} atoms more have'.format(not_filledin)
                                 if not_filledin else 'has'))
-            """
             if not element:
                 not_filledin = len([1 for row in rows[i+1:] if not row[1]])
                 raise UserError('Atom {} {} no element defined!'.format(atom,
                                 'and {} atoms more have'.format(not_filledin)
                                 if not_filledin else 'has'))
-            """
             self.mmtypes[atom] = (mmtype, v_element)
             setattr(atom, 'mmType', mmtype)
             atom.element = Element(v_element)

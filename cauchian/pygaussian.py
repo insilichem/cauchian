@@ -136,7 +136,7 @@ MM_TYPES = {
         'SX': {'element': 'S', 'MM3': ['17']},
         'SY': {'element': 'S', 'MM3': ['18']}
     },
-    'AMBER': {
+    'Amber': {
         'H': {'element': 'H'},
         'HO': {'element': 'H'},
         'HS': {'element': 'H'},
@@ -190,9 +190,12 @@ MM_TYPES = {
         'CS': {'element': 'Cs'},
         'I': {'element': 'I'},
         'F': {'element': 'F'},
-        'IB': {'element': 'Na'}
+        'IB': {'element': 'Na'},
+        #Additional types
+
+
     },
-    'DREIDING': {
+    'Dreiding': {
         'H_': {'element': 'H'},
         'H_B': {'element': 'H'},
         'H_HB': {'element': 'H'},
@@ -2238,15 +2241,15 @@ def _create_mm_definition(line, section):
         #It is supposed that NONB section follows the 10B card type (ambermd.org/formats.html)
         definition = MmExtraDefinition('VDW', args[0], bond_length=args[1], well_depth=args[2])
     elif section == 'BOND':
-        args = line.split()
-        mm1, mm2 = args[0].split('-')
+        mm1, mm2 = line[:5].split('-')
+        args = line[5:].split()
         #It is supposed that BOND section follows the 4 card type (ambermd.org/formats.html)
-        definition = MmExtraDefinition('HrmStr1', mm1, mmtype2=mm2, force_constant=args[1], bond_length=args[2])
+        definition = MmExtraDefinition('HrmStr1', mm1, mmtype2=mm2, force_constant=args[0], bond_length=args[1])
     elif section == 'ANGL':
-        args = line.split()
-        mm1, mm2, mm3 = args[0].split('-')
+        mm1, mm2, mm3 = line[:8].split('-')
+        args = line[8:].split()
         #It is supposed that ANGL section follows the 5 card type (ambermd.org/formats.html)
-        definition = MmExtraDefinition('HrmBnd1', mm1, mmtype2=mm2, mmtype3=mm3, force_constant=args[1], angle=args[2])
+        definition = MmExtraDefinition('HrmBnd1', mm1, mmtype2=mm2, mmtype3=mm3, force_constant=args[0], angle=args[1])
     elif section == 'DIHE':
         mm1, mm2, mm3, mm4 = line[:11].split('-')
         if mm1 == 'X ':
