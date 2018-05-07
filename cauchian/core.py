@@ -295,7 +295,7 @@ class Controller(object):
         self.model._bondorder_cache.clear()
         self.model._atoms_map.clear()
         self.gui._layers.clear()
-        self.gui._mmtypes.clear()
+        #self.gui._mmtypes.clear()
 
 class Model(object):
 
@@ -334,7 +334,7 @@ class Model(object):
             infile.mm_forcefield = state['mm_forcefield']
             infile.mm_water_forcefield = state['mm_water_forcefield']
             if state['mm_frcmod']:
-                infile.add_mm_forcefield(state['mm_frcmod'])
+                infile.add_mm_forcefield(state['mm_frcmod'], state['mm_types'])
             if state['charge_mm']:
                 infile.mm_charge = int(state['charge_mm'])
             if state['multiplicity_mm']:
@@ -427,12 +427,15 @@ class Model(object):
         if state['calculation'] == 'ONIOM':  # we have layers to deal with!
             oniom = True
             layers_flex = state['layers_flex']
-            frozen
+            mm_types = state['mm_types']
             if not layers_flex:
                 raise chimera.UserError('ONIOM layers have not been defined!')
+            if not mm_types:
+            	raise chimera.UserError('MM types have not been defined')
 
         for n, catom in enumerate(chimera_atoms):
             layer, frozen = layers_flex.get(catom, (None, 0))
+
             kw = dict(oniom=oniom, layer=layer, frozen=int(frozen))
             gatom = self.gaussian_atom(catom, n=n+1, **kw)
             gaussian_atoms.append(gatom)

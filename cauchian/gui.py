@@ -914,7 +914,7 @@ class MMTypesDialog(TangramBaseDialog):
         self.ui_frcmod_frame = tk.LabelFrame(self.canvas, text='Introduce .frcmod files')
         self.ui_frcmod_frame.grid(row=row, padx=5, pady=5, sticky='we')
         self.ui_files_to_load = Pmw.ScrolledListBox(self.canvas, listbox_height=3, listbox_width=40, 
-        											listbox_selectmode='multiple')
+                                                    listbox_selectmode='multiple')
         self.ui_addfiles = tk.Button(self.canvas, text='+', width=3, command=self._add_files)
         self.ui_removefiles = tk.Button(self.canvas, text='-', width=3, command=self._remove_files)
         toolbar = [[self.ui_files_to_load, (self.ui_addfiles, self.ui_removefiles)]]
@@ -1110,6 +1110,7 @@ class MMTypesDialog(TangramBaseDialog):
 
     def OK(self, *args, **kwargs):
         self.mmtypes.clear()
+        self.mmtypes['prev_types'] = {}
         molecule, rows = self.export_dialog()
         for i, (atom, (mmtype, v_element)) in enumerate(rows):
             if not mmtype:
@@ -1123,6 +1124,11 @@ class MMTypesDialog(TangramBaseDialog):
                                 'and {} atoms more have'.format(not_filledin)
                                 if not_filledin else 'has'))
             self.mmtypes[atom] = (mmtype, v_element)
+            prev_type = getattr(atom, self.var_mm_attrib.get(), '').upper()
+            if prev_type in self.mmtypes['prev_types']:
+                self.mmtypes['prev_types'][prev_type].add(mmtype.upper())
+            else:
+                self.mmtypes['prev_types'][prev_type] = {mmtype.upper()}
             setattr(atom, 'mmType', mmtype)
             atom.element = Element(v_element)
         self.Close()

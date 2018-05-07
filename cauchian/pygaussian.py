@@ -10,6 +10,7 @@ from __future__ import print_function, division
 from string import ascii_letters
 import sys
 import os
+import itertools
 from collections import namedtuple, defaultdict
 from datetime import datetime
 
@@ -885,198 +886,198 @@ GAFF_DESC = {
 }
 
 MM3_FROM_ELEMENT = {
-	'Ac': ['208'],
-	'Ag': ['187'],
-	'Al': ['167'],
-	'Am': ['214'],
-	'Ar': ['53'],
-	'As': ['177'],
-	'At': ['204'],
-	'Au': ['199'],
-	'B': ['26', '27'],
-	'Ba': ['127'],
-	'Be': ['165'],
-	'Bi': ['202'],
-	'Bk': ['216'],
-	'Br': ['13'],
-	'C': ['1', '2', '3', '4', '22', '29', '30', '38', '50', '56', '57', '58', '67', '68', '71', '106', '113', '114', '160', '161', '162'],
-	'Ca': ['125'],
-	'Cd': ['188'],
-	'Ce': ['129'],
-	'Cf': ['217'],
-	'Cl': ['12'],
-	'Cm': ['215'],
-	'Co': ['65', '66'],
-	'Cr': ['172'],
-	'Cs': ['191'],
-	'Cu': ['174'],
-	'D': ['36'],
-	'Dy': ['137'],
-	'Er': ['139'],
-	'Es': ['218'],
-	'Eu': ['134'],
-	'F': ['11'],
-	'Fe': ['61', '62'],
-	'Fm': ['219'],
-	'Fr': ['206'],
-	'Ga': ['176'],
-	'Gd': ['135'],
-	'Ge': ['31'],
-	'H': ['5', '21', '23', '24', '28', '44', '48', '73', '124'],
-	'He': ['51'],
-	'Hf': ['192'],
-	'Hg': ['200'],
-	'Ho': ['138'],
-	'I': ['14'],
-	'In': ['189'],
-	'Ir': ['197'],
-	'K': ['168'],
-	'Kr': ['54'],
-	'La': ['128'],
-	'Li': ['163'],
-	'Lu': ['142'],
-	'Lw': ['222'],
-	'Md': ['220'],
-	'Mg': ['59'],
-	'Mn': ['173'],
-	'Mo': ['182'],
-	'N': ['8', '9', '10', '37', '39', '40', '43', '45', '46', '72', '107', '108', '109', '110', '111', '143', '144', '146', '150', '151', '155', '164'],
-	'Na': ['166'],
-	'Nb': ['181'],
-	'Nd': ['131'],
-	'Ne': ['52'],
-	'Ni': ['63', '64'],
-	'No': ['221'],
-	'Np': ['212'],
-	'O': ['6', '7', '41', '47', '49', '69', '70', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100', '101', '102', '103', '115', '116', '117', '118', '119', '120', '121', '145', '148', '149', '159'],
-	'Os': ['196'],
-	'P': ['25', '60', '153'],
-	'Pa': ['210'],
-	'Pb': ['33'],
-	'Pd': ['186'],
-	'Pm': ['132'],
-	'Po': ['203'],
-	'Pr': ['130'],
-	'Pt': ['198'],
-	'Pu': ['213'],
-	'Ra': ['207'],
-	'Rb': ['178'],
-	'Re': ['195'],
-	'Rh': ['185'],
-	'Rn': ['205'],
-	'Ru': ['184'],
-	'S': ['15', '16', '17', '18', '42', '74', '104', '105', '154'],
-	'Sb': ['190'],
-	'Sc': ['169'],
-	'Se': ['34'],
-	'Si': ['19'],
-	'Sm': ['133'],
-	'Sn': ['32'],
-	'Sr': ['126'],
-	'Ta': ['193'],
-	'Tb': ['136'],
-	'Tc': ['183'],
-	'Te': ['35'],
-	'Th': ['209'],
-	'Ti': ['170'],
-	'Tl': ['201'],
-	'Tm': ['140'],
-	'U': ['211'],
-	'V': ['171'],
-	'W': ['194'],
-	'Xe': ['55'],
-	'Y': ['179'],
-	'Yb': ['141'],
-	'Zn': ['175'],
-	'Zr': ['180']
+    'Ac': ['208'],
+    'Ag': ['187'],
+    'Al': ['167'],
+    'Am': ['214'],
+    'Ar': ['53'],
+    'As': ['177'],
+    'At': ['204'],
+    'Au': ['199'],
+    'B': ['26', '27'],
+    'Ba': ['127'],
+    'Be': ['165'],
+    'Bi': ['202'],
+    'Bk': ['216'],
+    'Br': ['13'],
+    'C': ['1', '2', '3', '4', '22', '29', '30', '38', '50', '56', '57', '58', '67', '68', '71', '106', '113', '114', '160', '161', '162'],
+    'Ca': ['125'],
+    'Cd': ['188'],
+    'Ce': ['129'],
+    'Cf': ['217'],
+    'Cl': ['12'],
+    'Cm': ['215'],
+    'Co': ['65', '66'],
+    'Cr': ['172'],
+    'Cs': ['191'],
+    'Cu': ['174'],
+    'D': ['36'],
+    'Dy': ['137'],
+    'Er': ['139'],
+    'Es': ['218'],
+    'Eu': ['134'],
+    'F': ['11'],
+    'Fe': ['61', '62'],
+    'Fm': ['219'],
+    'Fr': ['206'],
+    'Ga': ['176'],
+    'Gd': ['135'],
+    'Ge': ['31'],
+    'H': ['5', '21', '23', '24', '28', '44', '48', '73', '124'],
+    'He': ['51'],
+    'Hf': ['192'],
+    'Hg': ['200'],
+    'Ho': ['138'],
+    'I': ['14'],
+    'In': ['189'],
+    'Ir': ['197'],
+    'K': ['168'],
+    'Kr': ['54'],
+    'La': ['128'],
+    'Li': ['163'],
+    'Lu': ['142'],
+    'Lw': ['222'],
+    'Md': ['220'],
+    'Mg': ['59'],
+    'Mn': ['173'],
+    'Mo': ['182'],
+    'N': ['8', '9', '10', '37', '39', '40', '43', '45', '46', '72', '107', '108', '109', '110', '111', '143', '144', '146', '150', '151', '155', '164'],
+    'Na': ['166'],
+    'Nb': ['181'],
+    'Nd': ['131'],
+    'Ne': ['52'],
+    'Ni': ['63', '64'],
+    'No': ['221'],
+    'Np': ['212'],
+    'O': ['6', '7', '41', '47', '49', '69', '70', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100', '101', '102', '103', '115', '116', '117', '118', '119', '120', '121', '145', '148', '149', '159'],
+    'Os': ['196'],
+    'P': ['25', '60', '153'],
+    'Pa': ['210'],
+    'Pb': ['33'],
+    'Pd': ['186'],
+    'Pm': ['132'],
+    'Po': ['203'],
+    'Pr': ['130'],
+    'Pt': ['198'],
+    'Pu': ['213'],
+    'Ra': ['207'],
+    'Rb': ['178'],
+    'Re': ['195'],
+    'Rh': ['185'],
+    'Rn': ['205'],
+    'Ru': ['184'],
+    'S': ['15', '16', '17', '18', '42', '74', '104', '105', '154'],
+    'Sb': ['190'],
+    'Sc': ['169'],
+    'Se': ['34'],
+    'Si': ['19'],
+    'Sm': ['133'],
+    'Sn': ['32'],
+    'Sr': ['126'],
+    'Ta': ['193'],
+    'Tb': ['136'],
+    'Tc': ['183'],
+    'Te': ['35'],
+    'Th': ['209'],
+    'Ti': ['170'],
+    'Tl': ['201'],
+    'Tm': ['140'],
+    'U': ['211'],
+    'V': ['171'],
+    'W': ['194'],
+    'Xe': ['55'],
+    'Y': ['179'],
+    'Yb': ['141'],
+    'Zn': ['175'],
+    'Zr': ['180']
 }
 
 MM3_FROM_GAFF = {
-	'c': ['3', '2'],
-	'c1': ['4'],
-	'c2': ['2', '38', '57'],
-	'c3': ['1', '22', '56'],
-	'ca': ['2'],
-	'cp': ['2'],
-	'cq': ['2'],
-	'cc': ['2'],
-	'cd': ['2'],
-	'ce': ['2'],
-	'cf': ['2'],
-	'cg': ['4'],
-	'ch': ['4'],
-	'cx': ['22'],
-	'cy': ['56'],
-	'cu': ['38'],
-	'cv': ['57'],
-	'cz': ['2'],
-	'h1': ['5'],
-	'h2': ['5'],
-	'h3': ['5'],
-	'h4': ['5'],
-	'h5': ['5'],
-	'ha': ['5'],
-	'hc': ['5', '124'],
-	'hn': ['23', '28', '48'],
-	'ho': ['21', '73'],
-	'hp': ['5'],
-	'hs': ['44'],
-	'hw': ['21'],
-	'hx': ['5'],
-	'f': ['11'],
-	'cl': ['12'],
-	'br': ['13'],
-	'I': ['14'],
-	'n': ['9'],
-	'n1': ['10'],
-	'n2': ['37'],
-	'n3': ['8'],
-	'n4': ['39'],
-	'na': ['8', '40'],
-	'nb': ['8'],
-	'nc': ['37'],
-	'nd': ['37'],
-	'ne': ['37'],
-	'nf': ['37'],
-	'nh': ['8'],
-	'no': ['46'],
-	'o': ['7'],
-	'oh': ['6'],
-	'os': ['6', '41'],
-	'ow': ['6'],
-	'p2': ['60'],
-	'p3': ['25'],
-	'p4': ['25'],
-	'p5': ['60'],
-	'pb': ['60'],
-	'pc': ['60'],
-	'pd': ['60'],
-	'pe': ['60'],
-	'pf': ['60'],
-	'px': ['60'],
-	'py': ['60'],
-	's': ['42'],
-	's2': ['15'],
-	's4': ['15', '17'],
-	's6': ['18'],
-	'sh': ['15'],
-	'ss': ['15', '42', '104'],
-	'sx': ['17'],
-	'sy': ['18']
+    'c': ['3', '2'],
+    'c1': ['4'],
+    'c2': ['2', '38', '57'],
+    'c3': ['1', '22', '56'],
+    'ca': ['2'],
+    'cp': ['2'],
+    'cq': ['2'],
+    'cc': ['2'],
+    'cd': ['2'],
+    'ce': ['2'],
+    'cf': ['2'],
+    'cg': ['4'],
+    'ch': ['4'],
+    'cx': ['22'],
+    'cy': ['56'],
+    'cu': ['38'],
+    'cv': ['57'],
+    'cz': ['2'],
+    'h1': ['5'],
+    'h2': ['5'],
+    'h3': ['5'],
+    'h4': ['5'],
+    'h5': ['5'],
+    'ha': ['5'],
+    'hc': ['5', '124'],
+    'hn': ['23', '28', '48'],
+    'ho': ['21', '73'],
+    'hp': ['5'],
+    'hs': ['44'],
+    'hw': ['21'],
+    'hx': ['5'],
+    'f': ['11'],
+    'cl': ['12'],
+    'br': ['13'],
+    'I': ['14'],
+    'n': ['9'],
+    'n1': ['10'],
+    'n2': ['37'],
+    'n3': ['8'],
+    'n4': ['39'],
+    'na': ['8', '40'],
+    'nb': ['8'],
+    'nc': ['37'],
+    'nd': ['37'],
+    'ne': ['37'],
+    'nf': ['37'],
+    'nh': ['8'],
+    'no': ['46'],
+    'o': ['7'],
+    'oh': ['6'],
+    'os': ['6', '41'],
+    'ow': ['6'],
+    'p2': ['60'],
+    'p3': ['25'],
+    'p4': ['25'],
+    'p5': ['60'],
+    'pb': ['60'],
+    'pc': ['60'],
+    'pd': ['60'],
+    'pe': ['60'],
+    'pf': ['60'],
+    'px': ['60'],
+    'py': ['60'],
+    's': ['42'],
+    's2': ['15'],
+    's4': ['15', '17'],
+    's6': ['18'],
+    'sh': ['15'],
+    'ss': ['15', '42', '104'],
+    'sx': ['17'],
+    'sy': ['18']
 }
 
 """
-(1)		Parameters for p4 are not enough
+(1)     Parameters for p4 are not enough
 (2)     For bond lengty, bond angle and torsional angle parameters, hc and ha 
         are the generic names of aliphatic and aromatic hydrogen connected 
         to carbon, respectively.
-(3) 	Defination priority of nitrogen: n>n3, n>n4, n>nh, n2>n, no>n, na>n
+(3)     Defination priority of nitrogen: n>n3, n>n4, n>nh, n2>n, no>n, na>n
         n4>nh
 (5)     Although the four atom types are same, maybe there are several different
         parameters correspond to different bond types. You may need to use 
         additional atom types to apply them correctly (with antechamber package,
         you can easily do this). 
-(4) 	Polarizabilities: mg2+ 0.120, f- 0.9743
+(4)     Polarizabilities: mg2+ 0.120, f- 0.9743
 """
 
 class GaussianInputFile(object):
@@ -1391,10 +1392,10 @@ class GaussianInputFile(object):
         else:
             return ''
 
-    def add_mm_forcefield(self, value):
-       for file in value:
+    def add_mm_forcefield(self, value, mmtypes):
+        for file in value:
             if file.endswith('.frcmod') and os.path.isfile(file):
-                self._mm_forcefield_extra.extend(import_from_frcmod(file))
+                self._mm_forcefield_extra.extend(import_from_frcmod(file, mmtypes))
             else:
                 raise ValueError('Supply a .frcmod file to load new parameters')
 
@@ -1492,7 +1493,6 @@ class GaussianInputFile(object):
         lines = []
         seen = set()
         for atom in self.atoms:
-            #print('entra_atom')
             if not atom.neighbors:
                 continue
             seen.add(atom)
@@ -2210,7 +2210,7 @@ class MmExtraDefinition(object):
         else:
             return ()
 
-def import_from_frcmod(path):
+def import_from_frcmod(path, mmtypes):
     SECTIONS = ('NONB', 'BOND', 'ANGL', 'DIHE')
     section = None
     mm_definitions = []
@@ -2221,34 +2221,57 @@ def import_from_frcmod(path):
             elif not line.strip():
                 section = None
             elif section:
-                    mm_definitions.append(_create_mm_definition(line, section))
+                mm_definitions.extend(_create_mm_definitions(line, section, mmtypes))
     return mm_definitions
 
-def _create_mm_definition(line, section):
-    definition = None
+def _create_mm_definitions(line, section, mmtypes):
+    definitions = []
     if section == 'NONB':
         args = line.split()
+        try:
+            args[0] = mmtypes['prev_types'][args[0].upper()]
+        except:
+            pass
         #It is supposed that NONB section follows the 10B card type (ambermd.org/formats.html)
-        definition = MmExtraDefinition('VDW', args[0], bond_length=args[1], well_depth=args[2])
+        for mm in args[0]:
+            definitions.append(MmExtraDefinition('VDW', mm, bond_length=args[1], well_depth=args[2]))
     elif section == 'BOND':
-        mm1, mm2 = line[:5].split('-')
+        mms = line[:5].split('-')
+        for i, mm in enumerate(mms):
+            try:
+                mms[i] = mmtypes['prev_types'][mm.upper()]
+            except:
+                mms[i] = {mms[i]}
         args = line[5:].split()
         #It is supposed that BOND section follows the 4 card type (ambermd.org/formats.html)
-        definition = MmExtraDefinition('HrmStr1', mm1, mmtype2=mm2, force_constant=args[0], bond_length=args[1])
+        for par in itertools.product(mms[0], mms[1]):
+            definitions.append(MmExtraDefinition('HrmStr1', par[0], mmtype2=par[1], force_constant=args[0], bond_length=args[1]))
     elif section == 'ANGL':
-        mm1, mm2, mm3 = line[:8].split('-')
+        mms = line[:8].split('-')
+        for i, mm in enumerate(mms):
+            try:
+                mms[i] = mmtypes['prev_types'][mm.upper()]
+            except:
+                mms[i] = {mms[i]}
         args = line[8:].split()
         #It is supposed that ANGL section follows the 5 card type (ambermd.org/formats.html)
-        definition = MmExtraDefinition('HrmBnd1', mm1, mmtype2=mm2, mmtype3=mm3, force_constant=args[0], angle=args[1])
+        for par in itertools.product(mms[0], mms[1], mms[2]):
+            definitions.append(MmExtraDefinition('HrmBnd1', par[0], mmtype2=par[1], mmtype3=par[2], force_constant=args[0], angle=args[1]))
     elif section == 'DIHE':
-        mm1, mm2, mm3, mm4 = line[:11].split('-')
-        if mm1 == 'X ':
-            mm1 = '* '
-        if mm4 == 'X ':
-            mm4 = '* '
+        mms = line[:11].split('-')
+        if mms[0] == 'X ':
+            mms[0] = '* '
+        if mms[3] == 'X ':
+            mms[3] = '* '
+        for i, mm in enumerate(mms):
+            try:
+                mms[i] = mmtypes['prev_types'][mm.upper()]
+            except:
+                mms[i] = {mms[i]}
         args = line[11:].split()
-        definition = MmExtraDefinition('DreiTrs', mm1, mmtype2=mm2, mmtype3=mm3, mmtype4=mm4, idivf=args[0], pk=args[1], phase=args[2], pn=args[3])
-    return definition
+        for par in itertools.product(mms[0], mms[1], mms[2], mms[3]):
+            definitions.append(MmExtraDefinition('DreiTrs', par[0], mmtype2=par[1], mmtype3=par[2], mmtype4=par[3], idivf=args[0], pk=args[1], phase=args[2], pn=args[3]))
+    return definitions
 
 if __name__ == '__main__':
     atom = GaussianAtom(element='C', coordinates=(10, 10, 10), n=1, atom_type='CT',
