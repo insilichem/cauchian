@@ -1492,6 +1492,7 @@ class GaussianInputFile(object):
         lines = []
         seen = set()
         for atom in self.atoms:
+            #print('entra_atom')
             if not atom.neighbors:
                 continue
             seen.add(atom)
@@ -1502,7 +1503,6 @@ class GaussianInputFile(object):
                     seen.add(neighbor)
             if line:
                 lines.append('{} {}'.format(atom.n, ' '.join(line)))
-
         return '\n'.join(lines)
 
     @staticmethod
@@ -1516,9 +1516,9 @@ class GaussianInputFile(object):
                 if neighbor.oniom_layer != atom_layer:
                     can_be_link.append(neighbor)
             n_links = len(can_be_link)
-            if n_links == 1:
-                atom.oniom_link = can_be_link[0]
-                can_be_link[0].oniom_link = atom
+            if n_links == 1 and can_be_link[0].oniom_bonded != atom:
+                atom.oniom_link = 'H'
+                atom.oniom_bonded = can_be_link[0]
             elif n_links > 1:
                 raise ValueError('Atom {} can only have one layer link. Found: {}'.format(
                     atom.atom_spec, ', '.join([a.atom_spec for a in can_be_link])))
@@ -1828,11 +1828,7 @@ class GaussianAtom(object):
 
     @oniom_link.setter
     def oniom_link(self, value):
-        if isinstance(value, GaussianAtom) or value is None:
-            self._oniom_link = value
-            return
-        raise ValueError('oniom_link must be a GaussianAtom instance. '
-                            'Value provided: {}'.format(value))
+        self._oniom_link = value
 
     @property
     def oniom_bonded(self):
@@ -1840,14 +1836,11 @@ class GaussianAtom(object):
 
     @oniom_bonded.setter
     def oniom_bonded(self, value):
-        if value is None:
-            self._oniom_bonded = None
+        if isinstance(value, GaussianAtom) or value is None:
+            self._oniom_bonded = value
             return
-        try:
-            self._oniom_bonded = int(value)
-        except ValueError:
-            raise ValueError('oniom_bonded must be int or int-like. '
-                             'Value provided: {}'.format(value))
+        raise ValueError('oniom_bonded must be a GaussianAtom instance. '
+                            'Value provided: {}'.format(value))
 
     @property
     def oniom_scale_factors(self):
@@ -1971,13 +1964,12 @@ class GaussianAtom(object):
         # ONIOM config
         if self.oniom_layer:
             line.append(' {}'.format(self.oniom_layer))
-        link = self.oniom_link
-        if link:
-            line.append(' {}'.format(link.n))
-            if link.oniom_bonded:
-                line.append(' {}'.format(link.oniom_bonded))
-            if link.oniom_scale_factors:
-                line.append(' {}'.format(' '.join(link.oniom_scale_factors)))
+        if self.oniom_link:
+            line.append(' {}'.format(self.oniom_link))
+            if self.oniom_bonded:
+                line.append(' {}'.format(self.oniom_bonded.n))
+            if self.oniom_scale_factors:
+                line.append(' {}'.format(' '.join(self.oniom_scale_factors)))
 
         return ''.join(map(str, line))
 

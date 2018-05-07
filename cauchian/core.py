@@ -204,49 +204,6 @@ class Controller(object):
                                                 self.gui._mm_frcmod, master=self.gui.uiMaster())
         self._mmtypes_dialog.enter()
 
-    """
-    def _cmd_mm_add_charges_btn(self, *args):
-        if self.gui.var_mm_forcefield.get() in ('GAFF', 'MM3'):
-            import AddCharge.gui as AC
-            d = AC.AddChargesDialog(models=[self.gui.ui_molecules.getvalue()],
-                                    chargeModel='AMBER ff99SB')
-
-    def _cmd_mm_types_btn(self, *args):
-        ff = self.gui.var_mm_forcefield.get()
-        menu_option = self.gui.var_mm_from_mol2.get()
-        
-        if menu_option in ['Catch from gaffType attribute', 'Convert from gaffType attrib (GAFF)']:
-            attrib_name = 'gaffType'
-        else:
-            attrib_name = 'mol2type'
-
-        if ff == 'GAFF':
-            for catom in self.gui.ui_molecules.getvalue().atoms:
-                try:
-                    catom.mmType = getattr(catom, attrib_name)
-                except AttributeError:
-                    self.gui.status('Cannot set GAFF types. You have to Add Charges before and Catch from gaffType.', color='red', blankAfter=5)
-                    return
-
-        elif ff == 'MM3':         
-            from pygaussian import MM3_FROM_GAFF
-            from pygaussian import MM3_FROM_UFF
-            for catom in self.gui.ui_molecules.getvalue().atoms:
-                try:
-                    if menu_option == 'Convert from mol2type attrib (UFF)':
-                        catom.mmType = MM3_FROM_UFF[getattr(catom, attrib_name).upper()]
-                    else:
-                        catom.mmType = MM3_FROM_GAFF[getattr(catom, attrib_name)]
-                except AttributeError:
-                    self.gui.status('Cannot set MM3 types. You have to Add Charges before and Convert from gaffType.', color='red', blankAfter=5)
-                    return
-                except KeyError:
-                    self.gui.status('Cannot set MM3 types. There are some unknown atom types.', color='red', blankAfter=5)
-                    return
-
-        self.gui.status('{} atom types have been set!'.format(ff), blankAfter=5)
-    """
-
     def _cmd_checkpoint_btn(self, *args):
         path = asksaveasfilename()
         if path:
