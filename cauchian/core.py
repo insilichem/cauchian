@@ -76,10 +76,10 @@ class Controller(object):
                      'var_qm_functional', 'var_qm_functional_type', 'var_qm_basis_set',
                      'var_qm_basis_kind', 'var_qm_basis_ext',
                      'var_mm_forcefield', 'var_mm_water_forcefield',
-                     'var_mm_frcmod', 'var_charge_qm', 'var_charge_mm',
-                     'var_multiplicity_qm', 'var_multiplicity_mm', 'var_title',
-                     'var_checkpoint', 'var_checkpoint_path',
-                     'var_nproc', 'var_memory', 'var_memory_units', 'var_mm_from_mol2')
+                     'var_charge_qm', 'var_charge_mm','var_multiplicity_qm', 
+                     'var_multiplicity_mm', 'var_title', 'var_checkpoint', 
+                     'var_checkpoint_path', 'var_nproc', 'var_memory', 
+                     'var_memory_units', 'var_mm_from_mol2')
         for name in variables:
             var = getattr(self.gui, name)
             command = getattr(self, '_trc' + name[3:], None)
@@ -201,7 +201,7 @@ class Controller(object):
         if self._mmtypes_dialog is None:
             from gui import MMTypesDialog
             self._mmtypes_dialog = MMTypesDialog(self.gui._mmtypes, self.gui.var_mm_forcefield,
-                                                self.gui.var_mm_frcmod, master=self.gui.uiMaster())
+                                                self.gui._mm_frcmod, master=self.gui.uiMaster())
         self._mmtypes_dialog.enter()
 
     """
@@ -420,6 +420,7 @@ class Model(object):
         state['layers_flex'] = self.gui._layers.copy()
         state['replicas'] = self.gui.var_molecule_replicas.get()
         state['mm_types'] = self.gui._mmtypes.copy()
+        state['mm_frcmod'] = self.gui._mm_frcmod[:]
 
         return state
 

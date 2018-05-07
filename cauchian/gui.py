@@ -5,7 +5,7 @@
 from __future__ import print_function, division
 # Python stdlib
 import Tkinter as tk
-from tkFileDialog import askopenfilename
+from tkFileDialog import askopenfilenames
 import Pmw
 from multiprocessing import cpu_count
 from random import choice
@@ -70,7 +70,7 @@ class CauchianDialog(TangramBaseDialog):
         self._layers = {}
         self.var_mm_forcefield = tk.StringVar()
         self.var_mm_water_forcefield = tk.StringVar()
-        self.var_mm_frcmod = tk.StringVar()
+        self._mm_frcmod = []
         self.var_mm_from_mol2 = tk.StringVar()
 
         # Atom types variables
@@ -667,7 +667,6 @@ class _SortableTableWithEntries(SortableTable):
             entry = Pmw.EntryField(hlist,
                                    entry_textvariable=contents,
                                    entry_width=5,
-                                   validate=self._validate_mm,
                                    **STYLES[Pmw.EntryField])
             widget = self._widgetData[(datum, column)] = entry
             hlist.item_create(row, col, itemtype="window", window=entry)
@@ -699,12 +698,6 @@ class _SortableTableWithEntries(SortableTable):
     @staticmethod
     def _validate_layer(text):
         if text.strip().upper() in ('H', 'L', 'M', ''):
-            return Pmw.OK
-        return Pmw.PARTIAL
-
-    @staticmethod
-    def _validate_mm(text):
-        if text:
             return Pmw.OK
         return Pmw.PARTIAL
 
@@ -890,6 +883,8 @@ class MMTypesDialog(TangramBaseDialog):
         #Variables
         self.var_mm_attrib = tk.StringVar()
         self.var_mm_orig_type = tk.StringVar()
+        self.var_mm_element = tk.StringVar()
+        self.var_mm_type = tk.StringVar()
 
         # Fire up
         self.title = 'Set MM atom types'
@@ -918,9 +913,12 @@ class MMTypesDialog(TangramBaseDialog):
         row += 1
         self.ui_frcmod_frame = tk.LabelFrame(self.canvas, text='Introduce .frcmod files')
         self.ui_frcmod_frame.grid(row=row, padx=5, pady=5, sticky='we')
-        self.ui_mm_frcmod = tk.Entry(self.canvas, textvariable=self.mmfrcmod)
-        self.ui_mm_frcmod_btn = tk.Button(self.canvas, text='...', command=self._frcmod_btn)
-        toolbar = [[self.ui_mm_frcmod, self.ui_mm_frcmod_btn]]
+        self.ui_files_to_load = Pmw.ScrolledListBox(self.canvas, listbox_height=3, listbox_width=40, 
+        											listbox_selectmode='multiple')
+        self.ui_addfiles = tk.Button(self.canvas, text='+', width=3, command=self._add_files)
+        self.ui_removefiles = tk.Button(self.canvas, text='-', width=3, command=self._remove_files)
+        toolbar = [[self.ui_files_to_load, (self.ui_addfiles, self.ui_removefiles)]]
+
         self.auto_grid(self.ui_frcmod_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
         row += 1
         self.ui_calc_attrib_frame = tk.LabelFrame(self.canvas, text='Calculate attributes')
@@ -939,6 +937,20 @@ class MMTypesDialog(TangramBaseDialog):
         self.ui_calc_mm = tk.Button(self.canvas, text='Go!', command=self._calc_mm)
         toolbar = [['Use attrib', self.ui_mm_attrib, 'which contains', self.ui_mm_orig_type, self.ui_calc_mm]]
         self.auto_grid(self.ui_calc_mm_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
+        row += 1
+        self.ui_toolbar_frame = tk.LabelFrame(self.canvas, text='Configure selected entries')
+        self.ui_toolbar_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_select_all = tk.Button(self.canvas, text='All', command=self._cb_select_all)
+        self.ui_select_none = tk.Button(self.canvas, text='None', command=self._cb_select_none)
+        self.ui_select_invert = tk.Button(self.canvas, text='Invert', command=self._cb_select_invert)
+        self.ui_select_selection = tk.Button(self.canvas, text='Current', command=self._cb_select_selection)
+        self.ui_batch_element_entry = tk.Entry(self.canvas, textvariable=self.var_mm_element, width=5)
+        self.ui_batch_element_btn = tk.Button(self.canvas, text='Set', command=self._cb_batch_element_btn)
+        self.ui_batch_type_entry = tk.Entry(self.canvas, textvariable=self.var_mm_type, width=5)
+        self.ui_batch_type_btn = tk.Button(self.canvas, text='Set', command=self._cb_batch_type_btn)
+        toolbar = [[self.ui_select_all, self.ui_select_none, 'Element', self.ui_batch_element_entry, self.ui_batch_element_btn],
+                   [self.ui_select_invert, self.ui_select_selection, 'MM type', self.ui_batch_type_entry, self.ui_batch_type_btn]]
+        self.auto_grid(self.ui_toolbar_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
         row += 1
         self.canvas.rowconfigure(row, weight=1)
         self.ui_table = t = _SortableTableWithEntries(self.canvas)
@@ -987,10 +999,19 @@ class MMTypesDialog(TangramBaseDialog):
         rows = [(row.atom, (row.mmtype, row.v_element)) for row in self.ui_table.data]
         return molecule, rows
 
-    def _frcmod_btn(self, *args):
-        path = askopenfilename(filetypes=[('Frcmod', '*.frcmod'), ('All files', '*')])
-        if path:
-            self.mmfrcmod.set(path)
+    def _add_files(self):
+        filepaths = askopenfilenames(filetypes=[('Frcmod File', '*.frcmod'), ('All files', '*')])
+        for filepath in filepaths:
+            self.ui_files_to_load.insert('end', filepath)
+        self.mmfrcmod[:] = list(self.ui_files_to_load.get())[:]
+
+    def _remove_files(self):
+        """
+        Remove the selected stage from the stage listbox
+        """
+        selection = self.ui_files_to_load._listbox.curselection()
+        self.ui_files_to_load.delete(*selection)
+        self.mmfrcmod[:] = list(self.ui_files_to_load.get())[:]
 
     def _calc_element(self):
         molecule = self.ui_molecule.getvalue()
@@ -1009,7 +1030,6 @@ class MMTypesDialog(TangramBaseDialog):
         self.ui_table.refresh()
         self.status('Atom elements updated', color='blue', blankAfter=3)
         
-
     def _calc_gaff(self):
         import AddCharge.gui as AC
         d = AC.AddChargesDialog(models=[self.ui_molecule.getvalue()],
@@ -1047,8 +1067,46 @@ class MMTypesDialog(TangramBaseDialog):
 
             if len(matches) > max_matches:
                 max_matches, plausible_type = len(matches), t
-        print(plausible_type)
         return plausible_type
+
+    def _cb_select_all(self, *args, **kwargs):
+        hlist = self.ui_table.tixTable.hlist
+        nrows = int(hlist.info_children()[-1])
+        for row in xrange(nrows+1):
+            hlist.selection_set(row)
+
+    def _cb_select_none(self, *args, **kwargs):
+        self.ui_table.tixTable.hlist.selection_clear()
+
+    def _cb_select_invert(self, *args, **kwargs):
+        hlist = self.ui_table.tixTable.hlist
+        selected = set(hlist.info_selection())
+        all_entries = set(hlist.info_children())
+        self._cb_select_none()
+        for row in selected ^ all_entries:
+            hlist.selection_set(row)
+
+    def _cb_select_selection(self, *args, **kwargs):
+        self._cb_select_none()
+        rows = [self.atoms2rows.get(atom.molecule, {}).get(atom)
+                for atom in chimera.selection.currentAtoms()]
+        self.ui_table.select(rows)
+
+    def _cb_batch_element_btn(self, *args, **kwargs):
+        element = self.var_mm_element.get()
+        selected = self.ui_table.selected()
+        for row in selected:
+            row.v_element = element
+        self.status('Applied element {} to {} rows'.format(element, len(selected)),
+                    color='blue', blankAfter=3)
+
+    def _cb_batch_type_btn(self, *args, **kwargs):
+        mm_type = self.var_mm_type.get()
+        selected = self.ui_table.selected()
+        for row in selected:
+            row.mmtype = mm_type
+        self.status('Applied MM type {} to {} rows'.format(mm_type, len(selected)),
+                    color='blue', blankAfter=3)
 
     def OK(self, *args, **kwargs):
         self.mmtypes.clear()
@@ -1059,7 +1117,7 @@ class MMTypesDialog(TangramBaseDialog):
                 raise UserError('Atom {} {} no type defined!'.format(atom,
                                 'and {} atoms more have'.format(not_filledin)
                                 if not_filledin else 'has'))
-            if not element:
+            if not v_element:
                 not_filledin = len([1 for row in rows[i+1:] if not row[1]])
                 raise UserError('Atom {} {} no element defined!'.format(atom,
                                 'and {} atoms more have'.format(not_filledin)

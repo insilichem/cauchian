@@ -190,9 +190,6 @@ MM_TYPES = {
         'I': {'element': 'I'},
         'F': {'element': 'F'},
         'IB': {'element': 'Na'},
-        #Additional types
-
-
     },
     'Dreiding': {
         'H_': {'element': 'H'},
@@ -1122,7 +1119,7 @@ class GaussianInputFile(object):
         self._qm_basis_sets_extra = []
         self._mm_forcefield = None
         self._mm_water_forcefield = None
-        self._mm_forcefield_extra = None
+        self._mm_forcefield_extra = []
         self._atoms = []
         self._restraints = []
 
@@ -1395,10 +1392,11 @@ class GaussianInputFile(object):
             return ''
 
     def add_mm_forcefield(self, value):
-        if value.endswith('.frcmod') and os.path.isfile(value):
-            self._mm_forcefield_extra = import_from_frcmod(value)
-        else:
-            raise ValueError('Supply a .frcmod file to load new parameters')
+       for file in value:
+            if file.endswith('.frcmod') and os.path.isfile(file):
+                self._mm_forcefield_extra.extend(import_from_frcmod(file))
+            else:
+                raise ValueError('Supply a .frcmod file to load new parameters')
 
     # System
     @property
