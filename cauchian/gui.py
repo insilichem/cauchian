@@ -21,8 +21,8 @@ from SimpleSession import registerAttribute
 from libtangram.ui import TangramBaseDialog, STYLES
 from core import Controller, Model
 from pygaussian import (MM_FORCEFIELDS, MEM_UNITS, JOB_TYPES, QM_METHODS, QM_FUNCTIONALS,
-                        QM_BASIS_SETS, QM_BASIS_SETS_EXT, ModRedundantRestraint, GAFF_DESC, 
-                        MM3_FROM_GAFF, MM3_FROM_ELEMENT, MM_ATTRIBS, MM_TYPES)
+                        QM_BASIS_SETS, QM_BASIS_SETS_EXT, ModRedundantRestraint, MM_ATTRIBS)
+from mm_dicts import MM_TYPES
 
 def showUI(*args, **kwargs):
     if chimera.nogui:
@@ -72,6 +72,7 @@ class CauchianDialog(TangramBaseDialog):
         self.var_mm_water_forcefield = tk.StringVar()
         self._mm_frcmod = []
         self.var_mm_from_mol2 = tk.StringVar()
+        self.var_mm_external = tk.IntVar()
 
         # Atom types variables
         self._mmtypes = {}
@@ -187,9 +188,9 @@ class CauchianDialog(TangramBaseDialog):
         self.ui_mm_water_forcefield = Pmw.OptionMenu(self.canvas, initialitem=0,
                                                 items=MM_FORCEFIELDS['Water'],
                                                 menubutton_textvariable=self.var_mm_water_forcefield)
-
-        # Atom types
         self.ui_mm_set_types_btn = tk.Button(self.canvas, text='Set MM atom types')
+        self.ui_mm_external = tk.Checkbutton(self.canvas, variable=self.var_mm_external,
+                                              text='Use Gaussian external for Garleek')
 
         
         #self.ui_mm_add_charges_btn = tk.Button(self.canvas, text='Add Charges')
@@ -197,7 +198,7 @@ class CauchianDialog(TangramBaseDialog):
         #types_grid = [[self.ui_mm_from_mol2], [self.ui_mm_types_btn]]
 
         mm_grid = [[('Waters', self.ui_mm_water_forcefield)],
-                   [(self.ui_mm_set_types_btn)]]
+                   [self.ui_mm_set_types_btn, self.ui_mm_external]]
         self.auto_grid(self.ui_mm_frame, mm_grid)
 
         # Hardware
@@ -671,16 +672,6 @@ class _SortableTableWithEntries(SortableTable):
             widget = self._widgetData[(datum, column)] = entry
             hlist.item_create(row, col, itemtype="window", window=entry)
             return
-            """
-            combo = Pmw.ComboBox(hlist,
-                                 entry_textvariable=contents,
-                                 entry_width=7,
-                                 scrolledlist_items = sorted(GAFF_DESC.keys()),
-                                 **STYLES[Pmw.EntryField])
-            widget = self._widgetData[(datum, column)] = combo
-            hlist.item_create(row, col, itemtype="window", window=combo)                  
-            return
-            """
         elif column.title in ['Other options']:
             SortableTable._createCell(self, hlist, row, col, datum, column)
         elif isinstance(contents, tk.StringVar):
@@ -897,6 +888,10 @@ class MMTypesDialog(TangramBaseDialog):
         if saved_mmtypes:
             self.restore_dialog(saved_mmtypes['molecule'], saved_mmtypes['atoms'])
 
+        #Trace variables of menus
+        self.var_mm_attrib.trace('w', self._trc_mm_attrib)
+        self._trc_mm_attrib()
+
     def fill_in_ui(self, *args):
         self.canvas.columnconfigure(0, weight=1)
 
@@ -906,9 +901,10 @@ class MMTypesDialog(TangramBaseDialog):
         self.ui_molecule = MoleculeOptionMenu(self.canvas, command=self.populate_table)
         self.ui_molecule.grid(row=row, padx=5, pady=5, sticky='we')
         self.ui_mm_forcefields = Pmw.OptionMenu(self.canvas, initialitem=0,
-                                                items=MM_FORCEFIELDS['General'],
+                                                items=MM_TYPES.keys(),
                                                 menubutton_textvariable=self.mmforcefield)
-        toolbar = [[self.ui_molecule, 'Forcefield', self.ui_mm_forcefields]]
+        self.ui_calc_element = tk.Button(self.canvas, text='Deduce elements', command=self._calc_element)
+        toolbar = [[self.ui_molecule, 'Forcefield', self.ui_mm_forcefields, self.ui_calc_element]]
         self.auto_grid(self.ui_mol_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
         row += 1
         self.ui_frcmod_frame = tk.LabelFrame(self.canvas, text='Introduce .frcmod files')
@@ -921,22 +917,17 @@ class MMTypesDialog(TangramBaseDialog):
 
         self.auto_grid(self.ui_frcmod_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
         row += 1
-        self.ui_calc_attrib_frame = tk.LabelFrame(self.canvas, text='Calculate attributes')
-        self.ui_calc_attrib_frame.grid(row=row, padx=5, pady=5, sticky='we')
-        self.ui_calc_gaff = tk.Button(self.canvas, text='Add charge and gaffType attribs', command=self._calc_gaff)
-        self.ui_calc_element = tk.Button(self.canvas, text='Update element attrib', command=self._calc_element)
-        toolbar = [[self.ui_calc_gaff, self.ui_calc_element]]
-        self.auto_grid(self.ui_calc_attrib_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
-        row += 1
-        self.ui_calc_mm_frame = tk.LabelFrame(self.canvas, text='Propose MM Type')
+        self.ui_calc_mm_frame = tk.LabelFrame(self.canvas, text='Propose MM Types')
         self.ui_calc_mm_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_calc_gaff = tk.Button(self.canvas, text='Go!', width=4, command=self._calc_gaff)
         self.ui_mm_attrib = Pmw.OptionMenu(self.canvas, items=MM_ATTRIBS, initialitem=0,
                                             menubutton_textvariable=self.var_mm_attrib)
         self.ui_mm_orig_type = Pmw.OptionMenu(self.canvas, initialitem=0, items=MM_TYPES.keys(),
                                                 menubutton_textvariable=self.var_mm_orig_type)
-        self.ui_calc_mm = tk.Button(self.canvas, text='Go!', command=self._calc_mm)
-        toolbar = [['Use attrib', self.ui_mm_attrib, 'which contains', self.ui_mm_orig_type, self.ui_calc_mm]]
-        self.auto_grid(self.ui_calc_mm_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
+        self.ui_calc_mm = tk.Button(self.canvas, text='Go!', width=4, command=self._calc_mm)
+        toolbar = [[('Calculate charges and Amber/GAFF types by Chimera'), self.ui_calc_gaff],
+                    [('Use attrib', self.ui_mm_attrib, 'which contains', self.ui_mm_orig_type), self.ui_calc_mm]]
+        self.auto_grid(self.ui_calc_mm_frame, toolbar, resize_columns=()) #, padx=3, pady=3, sticky='we')
         row += 1
         self.ui_toolbar_frame = tk.LabelFrame(self.canvas, text='Configure selected entries')
         self.ui_toolbar_frame.grid(row=row, padx=5, pady=5, sticky='we')
@@ -960,7 +951,7 @@ class MMTypesDialog(TangramBaseDialog):
         t.addColumn('Atom', 'atom', format=str, headerPadX=50, **kw)
         t.addColumn('charge', 'charge', format=str, headerPadX=5, **kw)
         t.addColumn('mol2type', 'mol2type', headerPadX=5, **kw)
-        t.addColumn('gaffType', 'gafftype', headerPadX=5, **kw)
+        t.addColumn('Chimera Amber type', 'gafftype', headerPadX=5, **kw)
         t.addColumn('element', 'var_element', format=lambda a: a, headerPadX=5, **kw)
         t.addColumn('MM type', 'var_mmtype', format=lambda a: a, headerPadX=5, **kw)
         t.addColumn('Other options', 'mmother', format=lambda a: a, headerPadX=10, **kw)
@@ -1039,23 +1030,27 @@ class MMTypesDialog(TangramBaseDialog):
         for row in self.ui_table.data:
             row.charge = getattr(row.atom, 'charge', None)
             row.gafftype = getattr(row.atom, 'gaffType', None)
-        self.ui_table.refresh()
-        self.status('GAFF atom types calculated', color='blue', blankAfter=3)
+        self.var_mm_attrib.set('Chimera Amber')
+        self._calc_mm()
+        self.status('Charges and atom types calculated', color='blue', blankAfter=3)
 
     def _calc_mm(self):
         ff = self.mmforcefield.get()
         orig = self.var_mm_orig_type.get()
-        attrib = self.var_mm_attrib.get().lower()    
+        if self.var_mm_attrib.get() == 'Chimera Amber':
+            attrib = 'gafftype' 
+        else:
+            attrib = self.var_mm_attrib.get().lower()    
         for row in self.ui_table.data:
             if ff == orig:
                 row.mmtype = getattr(row, attrib, '').upper()
-            elif ff == 'MM3':
+            else:
                 try:
                     row.mmtype = MM_TYPES[orig][getattr(row, attrib).upper()][ff][0]
                     row.mmother = ", ".join(MM_TYPES[orig][getattr(row, attrib).upper()][ff][1:])
                 except KeyError:
-                    #Valorate if put the Element conversion
-                    row.mmtype = ''
+                    #Valorate if introduce the Element conversion
+                    row.mmtype = getattr(row, attrib, '').upper()
                     row.mmother = ''
         self.ui_table.refresh()
 
@@ -1107,6 +1102,19 @@ class MMTypesDialog(TangramBaseDialog):
             row.mmtype = mm_type
         self.status('Applied MM type {} to {} rows'.format(mm_type, len(selected)),
                     color='blue', blankAfter=3)
+
+    def _trc_mm_attrib(self, *args):
+        if self.var_mm_attrib.get() == 'Chimera Amber':
+            attrib = 'gafftype' 
+        else:
+            attrib = self.var_mm_attrib.get().lower()
+        try:
+            types_list = [getattr(row, attrib, '').upper() for row in self.ui_table.data]
+        except:
+            return
+        plausible_type = self._plausible_type(MM_TYPES, types_list)
+        if plausible_type:
+            self.var_mm_orig_type.set(plausible_type)
 
     def OK(self, *args, **kwargs):
         self.mmtypes.clear()

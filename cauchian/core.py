@@ -238,11 +238,13 @@ class Controller(object):
         if value == 'ONIOM':
             self.gui.ui_mm_set_types_btn['state'] = 'normal'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'normal'
+            self.gui.ui_mm_external['state'] = 'normal'
             self.gui.ui_charges_mm['state'] = 'normal'
             self.gui.ui_multiplicity_mm['state'] = 'normal'
         else:  # == QM
             self.gui.ui_mm_set_types_btn['state'] = 'disabled'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'disabled'
+            self.gui.ui_mm_external['state'] = 'disabled'
             self.gui.ui_charges_mm['state'] = 'disabled'
             self.gui.ui_multiplicity_mm['state'] = 'disabled'
 
@@ -317,6 +319,7 @@ class Model(object):
             memory=(state['memory'] or None, state['memory_units']),
             checkpoint=state['checkpoint_path'] if state['checkpoint'] else None,
             connectivity=state['connectivity'],
+            mm_external=state['mm_external'],
         )
         infile = GaussianInputFile(**kwargs)
         infile.job = state['job']
