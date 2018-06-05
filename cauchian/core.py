@@ -239,12 +239,14 @@ class Controller(object):
             self.gui.ui_mm_set_types_btn['state'] = 'normal'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'normal'
             self.gui.ui_mm_external['state'] = 'normal'
+            self.gui.ui_mm_residues['state'] = 'normal'
             self.gui.ui_charges_mm['state'] = 'normal'
             self.gui.ui_multiplicity_mm['state'] = 'normal'
         else:  # == QM
             self.gui.ui_mm_set_types_btn['state'] = 'disabled'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'disabled'
             self.gui.ui_mm_external['state'] = 'disabled'
+            self.gui.ui_mm_residues['state'] = 'disabled'
             self.gui.ui_charges_mm['state'] = 'disabled'
             self.gui.ui_multiplicity_mm['state'] = 'disabled'
 
@@ -384,6 +386,52 @@ class Model(object):
 
         return state
 
+    def patch_residue_names(self, state=None):
+        if state is None:
+            state = self.state
+        for residue in state['molecule'].residues:
+            #Waters are 'WAT'
+            if residue.type  == 'HOH':
+                residue.type = 'WAT'
+            #Histidines cannot be 'HIS', have to be 'HIP'/'HIN'/'HID'/'HIE'
+            elif residue.type == 'HIS':
+                hd1, he2 = False, False
+                for atom in residue.atoms:
+                    if atom.name.upper() == "HD1":
+                        hd1 = True
+                    elif atom.name.upper() == "HE2":
+                        he2 = True
+                if hd1 and he2:
+                    residue.type = 'HIP'
+                elif hd1:
+                    residue.type = 'HID'
+                elif he2:
+                    residue.type = 'HIE'
+                else:
+                    residue.type = 'HIN'
+            #GLU/ASP with COOH have to be GLH/ASH
+            elif residue.type == 'GLU' or residue.type == 'ASP':
+                for atom in residue.atoms:
+                    if atom.name.upper() == "HD1" or atom.name.upper() == 'HD2':
+                        residue.type = residue.type[:2] + 'H'
+                        break
+            #Deprotonated TYR has to be TYD
+            elif residue.type == 'TYR':
+                tyd = True
+                for atom in residue.atoms:
+                    if atom.name.upper() == "HH" or atom.name.upper() == 'HO':
+                        tyd = False
+                        break
+                if tyd:
+                    residue.type = 'TYD'
+
+            #Valorate if use len(atom.primaryNeighbors()) to discern protonated/deprotonated
+            #Consult http://archive.ambermd.org/201406/0113.html
+
+            #Terminal residues
+            if len(residue.bondedResidues()) == 1:
+                pass
+
     def gaussian_atom(self, atom, n, oniom=True, layer=None, link=None, frozen=False):
         """
         Creates a GaussianAtom instance from a chimera.Atom object.
@@ -435,6 +483,9 @@ class Model(object):
                 raise chimera.UserError('ONIOM layers have not been defined!')
             if not mm_types:
             	raise chimera.UserError('MM types have not been defined')
+
+        if state['mm_residues']:
+            self.patch_residue_names(state)
 
         for n, catom in enumerate(chimera_atoms):
             layer, frozen = layers_flex.get(catom, (None, 0))

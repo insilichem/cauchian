@@ -73,6 +73,7 @@ class CauchianDialog(TangramBaseDialog):
         self._mm_frcmod = []
         self.var_mm_from_mol2 = tk.StringVar()
         self.var_mm_external = tk.IntVar()
+        self.var_mm_residues = tk.IntVar()
 
         # Atom types variables
         self._mmtypes = {}
@@ -188,6 +189,8 @@ class CauchianDialog(TangramBaseDialog):
         self.ui_mm_water_forcefield = Pmw.OptionMenu(self.canvas, initialitem=0,
                                                 items=MM_FORCEFIELDS['Water'],
                                                 menubutton_textvariable=self.var_mm_water_forcefield)
+        self.ui_mm_residues = tk.Checkbutton(self.canvas, variable=self.var_mm_residues,
+                                              text='Rename residues for Garleek')
         self.ui_mm_set_types_btn = tk.Button(self.canvas, text='Set MM atom types')
         self.ui_mm_external = tk.Checkbutton(self.canvas, variable=self.var_mm_external,
                                               text='Use Gaussian external for Garleek')
@@ -197,7 +200,7 @@ class CauchianDialog(TangramBaseDialog):
         #self.ui_mm_types_btn = tk.Button(self.canvas, text='Set MM Atom Types')
         #types_grid = [[self.ui_mm_from_mol2], [self.ui_mm_types_btn]]
 
-        mm_grid = [[('Waters', self.ui_mm_water_forcefield)],
+        mm_grid = [[('Waters', self.ui_mm_water_forcefield), self.ui_mm_residues],
                    [self.ui_mm_set_types_btn, self.ui_mm_external]]
         self.auto_grid(self.ui_mm_frame, mm_grid)
 
@@ -1043,7 +1046,10 @@ class MMTypesDialog(TangramBaseDialog):
             attrib = self.var_mm_attrib.get().lower()    
         for row in self.ui_table.data:
             if ff == orig:
-                row.mmtype = getattr(row, attrib, '').upper()
+                try:
+                    row.mmtype = getattr(row, attrib, '').upper()
+                except:
+                    row.mmtype = row.v_element
             else:
                 try:
                     row.mmtype = MM_TYPES[orig][getattr(row, attrib).upper()][ff][0]
@@ -1052,6 +1058,8 @@ class MMTypesDialog(TangramBaseDialog):
                     #Valorate if introduce the Element conversion
                     row.mmtype = getattr(row, attrib, '').upper()
                     row.mmother = ''
+                except:
+                    row.mmtype = row.v_element
         self.ui_table.refresh()
 
     def _plausible_type(self, mm_dict, types_list):
