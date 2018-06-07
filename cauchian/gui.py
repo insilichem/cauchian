@@ -542,6 +542,10 @@ class ONIOMLayersDialog(TangramBaseDialog):
         selected = self.ui_table.selected()
         for row in selected:
             row.layer = layer
+            if layer == 'H':
+                row.atom.drawMode = 3 #Ball and stick for High layer
+            else:
+                row.atom.drawMode = 2 #Stick for everyelse
         self.status('Applied layer {} to {} rows'.format(layer, len(selected)),
                     color='blue', blankAfter=3)
 
