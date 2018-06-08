@@ -1121,7 +1121,10 @@ class MMTypesDialog(TangramBaseDialog):
         else:
             attrib = self.var_mm_attrib.get().lower()
         try:
-            types_list = [getattr(row, attrib, '').upper() for row in self.ui_table.data]
+            types_list = []
+            for row in self.ui_table.data:
+                if getattr(row, attrib, ''):
+                    types_list.append(getattr(row, attrib, '').upper())
         except:
             return
         plausible_type = self._plausible_type(MM_TYPES, types_list)

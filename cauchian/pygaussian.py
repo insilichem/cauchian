@@ -504,9 +504,6 @@ class GaussianInputFile(object):
             n_links = len(can_be_link)
             if n_links == 1 and can_be_link[0].oniom_bonded != atom:
                 try:
-                    print(mm_forcefield)
-                    print(atom_layer)
-                    print(atom.atom_type)
                     if (atom_layer == 'H') or (atom_layer == 'M' and can_be_link[0].oniom_layer == 'L'):
                         atom.oniom_link = 'H-' + MM_TYPES[mm_forcefield][atom.atom_type]['link_atom']
                     else:
