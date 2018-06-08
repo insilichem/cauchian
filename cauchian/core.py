@@ -496,12 +496,19 @@ class Model(object):
             mapping[catom] = gatom
 
         show_warning = False
+        assign_bond_orders(state['molecule'], engine='openbabel')
+        try:
+            assign_bond_orders(state['molecule'], engine='openbabel')
+        except:
+            try:
+                assign_bond_orders(state['molecule'], engine='rdkit')
+            except:
+                pass
         for catom, gatom in zip(chimera_atoms, gaussian_atoms):
             for cneighbor, bond in catom.bondsMap.items():
                 order = getattr(bond, 'order', None)
-                if order is None:
+                if not order:
                     order = 1.0
-                    show_warning = True
                 gatom.add_neighbor(mapping[cneighbor], order)
         if show_warning:
             errormsg = ('Some bonds did not specify bond order, so a default of 1.0 '
