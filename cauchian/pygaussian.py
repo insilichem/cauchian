@@ -14,6 +14,8 @@ import itertools
 from collections import namedtuple, defaultdict
 from datetime import datetime
 
+from mm_dicts import MM_TYPES
+
 if sys.version_info.major == 3:
     basestring = str
 
@@ -398,7 +400,7 @@ class GaussianInputFile(object):
         if len(self._atoms) > 250000:
             raise ValueError('Max number of atoms is 250 000.')
         if self.mm_forcefield:  # using ONIOM!
-            self._compute_oniom_links(self._atoms)
+            self._compute_oniom_links(self._atoms, self.mm_forcefield)
         return self._atoms
 
     @atoms.setter
@@ -490,7 +492,7 @@ class GaussianInputFile(object):
         return '\n'.join(lines)
 
     @staticmethod
-    def _compute_oniom_links(atoms):
+    def _compute_oniom_links(atoms, mm_forcefield):
         by_layers = defaultdict(list)
         linked = set()
         for atom in atoms:
@@ -501,7 +503,16 @@ class GaussianInputFile(object):
                     can_be_link.append(neighbor)
             n_links = len(can_be_link)
             if n_links == 1 and can_be_link[0].oniom_bonded != atom:
-                atom.oniom_link = 'H'
+                try:
+                    print(mm_forcefield)
+                    print(atom_layer)
+                    print(atom.atom_type)
+                    if (atom_layer == 'H') or (atom_layer == 'M' and can_be_link[0].oniom_layer == 'L'):
+                        atom.oniom_link = 'H-' + MM_TYPES[mm_forcefield][atom.atom_type]['link_atom']
+                    else:
+                        atom.oniom_link = 'H-' + MM_TYPES[mm_forcefield][can_be_link[0].atom_type]['link_atom']
+                except:
+                    atom.oniom_link = 'H-H'
                 atom.oniom_bonded = can_be_link[0]
             elif n_links > 1:
                 raise ValueError('Atom {} can only have one layer link. Found: {}'.format(

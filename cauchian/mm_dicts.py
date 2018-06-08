@@ -58,72 +58,72 @@ MM_TYPES = {
         'IB': {'element': 'Na'},
     },
     'Amber99SB': {
-        'H': {'element': 'H', 'MM3PRO': ['20', '19', '22', '23', '24', '25']},
-        'HO': {'element': 'H', 'MM3PRO': ['26']},
-        'HS': {'element': 'H', 'MM3PRO': ['27']},
-        'H1': {'element': 'H', 'MM3PRO': ['19']},
-        'H2': {'element': 'H', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
-        'H3': {'element': 'H', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'H4': {'element': 'H', 'MM3PRO': ['19']},
-        'H5': {'element': 'H', 'MM3PRO': ['19']},
-        'HW': {'element': 'H', 'MM3PRO': ['26']},
-        'HC': {'element': 'H', 'MM3PRO': ['19']},
-        'HA': {'element': 'H', 'MM3PRO': ['19']},
-        'HP': {'element': 'H', 'MM3PRO': ['19']},
-        'OH': {'element': 'O', 'MM3PRO': ['17']},
-        'OS': {'element': 'O', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
-        'O': {'element': 'O', 'MM3PRO': ['13']},
-        'O2': {'element': 'O', 'MM3PRO': ['14']},
-        'OW': {'element': 'O', 'MM3PRO': ['17']},
-        'CT': {'element': 'C', 'MM3PRO': ['1']},
-        'CH': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'C2': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'C3': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'C': {'element': 'C', 'MM3PRO': ['2', '3']},
-        'C*': {'element': 'C', 'MM3PRO': ['6']},
-        'CA': {'element': 'C', 'MM3PRO': ['4', '5']},
-        'CB': {'element': 'C', 'MM3PRO': ['4']},
-        'CC': {'element': 'C', 'MM3PRO': ['6']},
-        'CN': {'element': 'C', 'MM3PRO': ['4']},
-        'CM': {'element': 'C', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
-        'CK': {'element': 'C', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
-        'CQ': {'element': 'C', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
-        'CD': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'CE': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'CF': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'CP': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'CI': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'CJ': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'CW': {'element': 'C', 'MM3PRO': ['6']},        
-        'CV': {'element': 'C', 'MM3PRO': ['6']},        #We assign this type in non-protonated Histidine
-        'CR': {'element': 'C', 'MM3PRO': ['7']},
-        'CY': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'C0': {'element': 'Ca', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
-        'MG': {'element': 'Mg', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
-        'N': {'element': 'N', 'MM3PRO': ['8']},
-        'NA': {'element': 'N', 'MM3PRO': ['12', '11']},
-        'N2': {'element': 'N', 'MM3PRO': ['10']},
-        'N*': {'element': 'N', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
-        'NP': {'element': 'N', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'NQ': {'element': 'N', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'NB': {'element': 'N', 'MM3PRO': ['11']},       #We assign this type in non-protonated Histidine Nitrogens
-        'NC': {'element': 'N', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
-        'NT': {'element': 'N', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'N3': {'element': 'N', 'MM3PRO': ['9']},
-        'S': {'element': 'S', 'MM3PRO': ['18']},
-        'SH': {'element': 'S', 'MM3PRO': ['18']},
-        'P': {'element': 'P', 'MM3PRO': ['']},          #Only used for ADN (not ADN in MM3PRO)
-        'LP': {'element': '', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
-        'F': {'element': 'F', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
-        'CL': {'element': 'Cl', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
-        'BR': {'element': 'Br', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
-        'I': {'element': 'I', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
-        'FE': {'element': 'Fe', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
-        'EP': {'element': '', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
-        'OG': {'element': 'O', 'MM3PRO': ['']},         #Not used in standard residues nor ADN    
-        'OL': {'element': 'O', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
-        'AC': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN    
-        'EC': {'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'H':  {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['20', '19', '22', '23', '24', '25']},
+        'HO': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['26']},
+        'HS': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['27']},
+        'H1': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['19']},
+        'H2': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
+        'H3': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'H4': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['19']},
+        'H5': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['19']},
+        'HW': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['26']},
+        'HC': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['19']},
+        'HA': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['19']},
+        'HP': {'link_atom': 'Test', 'element': 'H', 'MM3PRO': ['19']},
+        'OH': {'link_atom': 'Test', 'element': 'O', 'MM3PRO': ['17']},
+        'OS': {'link_atom': 'Test', 'element': 'O', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
+        'O':  {'link_atom': 'Test', 'element': 'O', 'MM3PRO': ['13']},
+        'O2': {'link_atom': 'Test', 'element': 'O', 'MM3PRO': ['14']},
+        'OW': {'link_atom': 'Test', 'element': 'O', 'MM3PRO': ['17']},
+        'CT': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['1']},
+        'CH': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'C2': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'C3': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'C':  {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['2', '3']},
+        'C*': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['6']},
+        'CA': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['4', '5']},
+        'CB': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['4']},
+        'CC': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['6']},
+        'CN': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['4']},
+        'CM': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
+        'CK': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
+        'CQ': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
+        'CD': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'CE': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'CF': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'CP': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'CI': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'CJ': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'CW': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['6']},        
+        'CV': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['6']},        #We assign this type in non-protonated Histidine
+        'CR': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['7']},
+        'CY': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'C0': {'link_atom': 'Test', 'element': 'Ca', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
+        'MG': {'link_atom': 'Test', 'element': 'Mg', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
+        'N':  {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['8']},
+        'NA': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['12', '11']},
+        'N2': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['10']},
+        'N*': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
+        'NP': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'NQ': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'NB': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['11']},       #We assign this type in non-protonated Histidine Nitrogens
+        'NC': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['']},         #Only used for ADN (not ADN in MM3PRO)
+        'NT': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'N3': {'link_atom': 'Test', 'element': 'N', 'MM3PRO': ['9']},
+        'S':  {'link_atom': 'Test', 'element': 'S', 'MM3PRO': ['18']},
+        'SH': {'link_atom': 'Test', 'element': 'S', 'MM3PRO': ['18']},
+        'P':  {'link_atom': 'Test', 'element': 'P', 'MM3PRO': ['']},          #Only used for ADN (not ADN in MM3PRO)
+        'LP': {'link_atom': 'Test', 'element': '', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
+        'F':  {'link_atom': 'Test', 'element': 'F', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
+        'CL': {'link_atom': 'Test', 'element': 'Cl', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
+        'BR': {'link_atom': 'Test', 'element': 'Br', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
+        'I':  {'link_atom': 'Test', 'element': 'I', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
+        'FE': {'link_atom': 'Test', 'element': 'Fe', 'MM3PRO': ['']},        #Not used in standard residues nor ADN
+        'EP': {'link_atom': 'Test', 'element': '', 'MM3PRO': ['']},          #Not used in standard residues nor ADN
+        'OG': {'link_atom': 'Test', 'element': 'O', 'MM3PRO': ['']},         #Not used in standard residues nor ADN    
+        'OL': {'link_atom': 'Test', 'element': 'O', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
+        'AC': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN    
+        'EC': {'link_atom': 'Test', 'element': 'C', 'MM3PRO': ['']},         #Not used in standard residues nor ADN
     },
     'GAFF': {
         'C': {'element': 'C', 'MM3': ['3', '2']},
@@ -632,7 +632,7 @@ MM_TYPES = {
 }
 
 """
-#OLD STUFF THAT MAYBE WOULD BE USEFUL IN FUTURE
+#OLD STUFF THAT MAY BE USEFUL IN FUTURE
 
 GAFF_DESC = {
     'c': 'Sp2 C carbonyl group',
