@@ -499,9 +499,9 @@ class Model(object):
         for catom, gatom in zip(chimera_atoms, gaussian_atoms):
             for cneighbor, bond in catom.bondsMap.items():
                 order = getattr(bond, 'order', None)
-                # if order is None:
-                #     order = 1.0
-                #     show_warning = False
+                if order is None:
+                    order = 1.0
+                    show_warning = True
                 gatom.add_neighbor(mapping[cneighbor], order)
         if show_warning:
             errormsg = ('Some bonds did not specify bond order, so a default of 1.0 '
