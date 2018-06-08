@@ -496,7 +496,6 @@ class Model(object):
             mapping[catom] = gatom
 
         show_warning = False
-        assign_bond_orders(state['molecule'], engine='openbabel')
         try:
             assign_bond_orders(state['molecule'], engine='openbabel')
         except:
