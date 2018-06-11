@@ -65,6 +65,10 @@ QM_FUNCTIONALS_ALL = set(f for v in QM_FUNCTIONALS.values() for f in v)
 
 MM_ATTRIBS = ('mol2type', 'Chimera Amber')
 
+GAUSSIAN_VERSION = ('gaussian_16', 'gaussian_09a', 'gaussian_09b', 'gaussian_09c', 'gaussian_09d')
+
+MM_PROGRAM = ['tinker']
+
 class GaussianInputFile(object):
 
     """

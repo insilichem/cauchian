@@ -36,6 +36,7 @@ class Controller(object):
         self._basis_set_dialog = None
         self._layers_dialog = None
         self._mmtypes_dialog = None
+        self._garleek_dialog = None
         self._modredundant_dialog = None
 
         # Tie everything up
@@ -53,7 +54,8 @@ class Controller(object):
 
         # Button actions
         buttons = ('ui_layers', 'ui_solvent_btn', 'ui_qm_basis_per_atom',
-                   'ui_redundant_btn', 'ui_checkpoint_btn','ui_mm_set_types_btn')
+                   'ui_redundant_btn', 'ui_checkpoint_btn','ui_mm_set_types_btn', 
+                   'ui_mm_garleek_btn')
         for btn in buttons:
             button = getattr(self.gui, btn)
             command = getattr(self, '_cmd' + btn[2:], None)
@@ -76,6 +78,7 @@ class Controller(object):
                      'var_qm_functional', 'var_qm_functional_type', 'var_qm_basis_set',
                      'var_qm_basis_kind', 'var_qm_basis_ext',
                      'var_mm_forcefield', 'var_mm_water_forcefield',
+                     'var_mm_residues', 'var_mm_external',
                      'var_charge_qm', 'var_charge_mm','var_multiplicity_qm', 
                      'var_multiplicity_mm', 'var_title', 'var_checkpoint', 
                      'var_checkpoint_path', 'var_nproc', 'var_memory', 
@@ -204,6 +207,13 @@ class Controller(object):
                                                 self.gui._mm_frcmod, master=self.gui.uiMaster())
         self._mmtypes_dialog.enter()
 
+    def _cmd_mm_garleek_btn(self, *args):
+        if self._garleek_dialog is None:
+            from gui import GarleekDialog
+            self._garleek_dialog = GarleekDialog(self.gui.var_mm_residues, self.gui.var_mm_external, 
+                                                self.gui.var_mm_forcefield.get(), master=self.gui.uiMaster())
+        self._garleek_dialog.enter()
+
     def _cmd_checkpoint_btn(self, *args):
         path = asksaveasfilename()
         if path:
@@ -236,17 +246,17 @@ class Controller(object):
     def _trc_calculation(self, *args):
         value = self.gui.var_calculation.get()
         if value == 'ONIOM':
+            self.gui.ui_layers['state'] = 'normal'
             self.gui.ui_mm_set_types_btn['state'] = 'normal'
+            self.gui.ui_mm_garleek_btn['state'] = 'normal'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'normal'
-            self.gui.ui_mm_external['state'] = 'normal'
-            self.gui.ui_mm_residues['state'] = 'normal'
             self.gui.ui_charges_mm['state'] = 'normal'
             self.gui.ui_multiplicity_mm['state'] = 'normal'
         else:  # == QM
+            self.gui.ui_layers['state'] = 'disabled'
             self.gui.ui_mm_set_types_btn['state'] = 'disabled'
+            self.gui.ui_mm_garleek_btn['state'] = 'disabled'
             self.gui.ui_mm_water_forcefield['menubutton_state'] = 'disabled'
-            self.gui.ui_mm_external['state'] = 'disabled'
-            self.gui.ui_mm_residues['state'] = 'disabled'
             self.gui.ui_charges_mm['state'] = 'disabled'
             self.gui.ui_multiplicity_mm['state'] = 'disabled'
 

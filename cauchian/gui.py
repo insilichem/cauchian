@@ -21,7 +21,8 @@ from SimpleSession import registerAttribute
 from libtangram.ui import TangramBaseDialog, STYLES
 from core import Controller, Model
 from pygaussian import (MM_FORCEFIELDS, MEM_UNITS, JOB_TYPES, QM_METHODS, QM_FUNCTIONALS,
-                        QM_BASIS_SETS, QM_BASIS_SETS_EXT, ModRedundantRestraint, MM_ATTRIBS)
+                        QM_BASIS_SETS, QM_BASIS_SETS_EXT, ModRedundantRestraint, MM_ATTRIBS,
+                        GAUSSIAN_VERSION, MM_PROGRAM)
 from mm_dicts import MM_TYPES
 
 def showUI(*args, **kwargs):
@@ -124,8 +125,7 @@ class CauchianDialog(TangramBaseDialog):
         self.ui_connectivity = tk.Checkbutton(self.canvas, variable=self.var_connectivity,
                                               text='Connectivity')
         self.ui_redundant_btn = tk.Button(self.canvas, text='ModRedundant', state='disabled')
-        self.ui_layers = tk.Button(self.canvas, text='Layers & Flex')
-
+        
         self.ui_charges_frame = tk.Frame(self.canvas)
         self.ui_charges_qm = tk.Entry(self.canvas, textvariable=self.var_charge_qm, width=3)
         self.ui_charges_mm = tk.Entry(self.canvas, textvariable=self.var_charge_mm, width=3)
@@ -141,7 +141,6 @@ class CauchianDialog(TangramBaseDialog):
         self.ui_replicas_chk.grid(in_=self.ui_system_frame, row=0, column=1, **kw)
         self.ui_connectivity.grid(in_=self.ui_system_frame, row=0, column=2, **kw)
         self.ui_redundant_btn.grid(in_=self.ui_system_frame, row=1, column=1, sticky='we', **kw)
-        self.ui_layers.grid(in_=self.ui_system_frame, row=1, column=2, sticky='we', **kw)
         self.ui_charges_frame.grid(in_=self.ui_system_frame, row=2, column=1,
             columnspan=2, sticky='news', **kw)
 
@@ -184,24 +183,17 @@ class CauchianDialog(TangramBaseDialog):
                    ['Solvent', self.ui_solvent_btn]]
         self.auto_grid(self.ui_qm_frame, qm_grid)
 
-        # MM Configuration
-        self.ui_mm_frame = tk.LabelFrame(self.canvas, text='MM Settings')
+        # ONIOM Configuration
+        self.ui_mm_frame = tk.LabelFrame(self.canvas, text='ONIOM Settings')
         self.ui_mm_water_forcefield = Pmw.OptionMenu(self.canvas, initialitem=0,
                                                 items=MM_FORCEFIELDS['Water'],
                                                 menubutton_textvariable=self.var_mm_water_forcefield)
-        self.ui_mm_residues = tk.Checkbutton(self.canvas, variable=self.var_mm_residues,
-                                              text='Rename residues for Garleek')
         self.ui_mm_set_types_btn = tk.Button(self.canvas, text='Set MM atom types')
-        self.ui_mm_external = tk.Checkbutton(self.canvas, variable=self.var_mm_external,
-                                              text='Use Gaussian external for Garleek')
+        self.ui_layers = tk.Button(self.canvas, text='Layers & Flex')
+        self.ui_mm_garleek_btn = tk.Button(self.canvas, text='Configure Garleek')
 
-        
-        #self.ui_mm_add_charges_btn = tk.Button(self.canvas, text='Add Charges')
-        #self.ui_mm_types_btn = tk.Button(self.canvas, text='Set MM Atom Types')
-        #types_grid = [[self.ui_mm_from_mol2], [self.ui_mm_types_btn]]
-
-        mm_grid = [[('Waters', self.ui_mm_water_forcefield), self.ui_mm_residues],
-                   [self.ui_mm_set_types_btn, self.ui_mm_external]]
+        mm_grid = [[('Waters', self.ui_mm_water_forcefield)],
+                   [self.ui_mm_set_types_btn, self.ui_layers, self.ui_mm_garleek_btn]]
         self.auto_grid(self.ui_mm_frame, mm_grid)
 
         # Hardware
@@ -1154,4 +1146,74 @@ class MMTypesDialog(TangramBaseDialog):
                 self.mmtypes['prev_types'][prev_type] = {mmtype.upper()}
             setattr(atom, 'mmType', mmtype)
             atom.element = Element(v_element)
+        self.Close()
+
+#############################
+#
+# Garleek configuration
+#
+#############################
+
+class GarleekDialog(TangramBaseDialog):
+
+    """
+    Set Garleek settings in case of using it
+    """
+
+    buttons = ('OK')
+
+    #TODO (11th June 2018)
+    #Control self.var_ff_file flux
+    #Define how var_gaussian_version and var_mm_version have to work
+    def __init__(self, mm_residues, mm_external, ff_file, *args, **kwargs):
+        print(ff_file)
+        #Variables
+        self.var_gaussian_version = tk.StringVar()
+        self.var_mm_version = tk.StringVar()
+
+        # Fire up
+        self.title = 'Configure Garleek job'
+        self.var_mm_residues = mm_residues
+        self.var_mm_external = mm_external
+        if not self.var_ff_file:
+            self.var_ff_file = ff_file
+        super(GarleekDialog, self).__init__(with_logo=False, *args, **kwargs)
+        
+        #Trace variables of menus
+        self.var_mm_external.trace('w', self._trc_mm_external)
+        self._trc_mm_external()
+        
+    def fill_in_ui(self, *args):
+        self.canvas.columnconfigure(0, weight=1)
+
+        row = 1
+        self.ui_general_frame = tk.LabelFrame(self.canvas, text='General Settings')
+        self.ui_general_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_mm_residues = tk.Checkbutton(self.canvas, variable=self.var_mm_residues,
+                                              text='Rename residues for Garleek')
+        self.ui_mm_external = tk.Checkbutton(self.canvas, variable=self.var_mm_external,
+                                              text='Use Gaussian external for Garleek')
+        toolbar = [[self.ui_mm_residues, self.ui_mm_external]]
+        self.auto_grid(self.ui_general_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
+        row += 1
+        self.ui_external_frame = tk.LabelFrame(self.canvas, text='Configure external command')
+        self.ui_external_frame.grid(row=row, padx=5, pady=5, sticky='we')
+        self.ui_gaussian_version = Pmw.OptionMenu(self.canvas, items=GAUSSIAN_VERSION, initialitem=0,
+                                            menubutton_textvariable=self.var_gaussian_version)
+        self.ui_mm_version = Pmw.OptionMenu(self.canvas, initialitem=0, items=MM_PROGRAM,
+                                                menubutton_textvariable=self.var_mm_version)
+        self.ui_ff_file = tk.Entry(self.canvas, textvariable=self.var_ff_file)
+        toolbar = [[('Forcefield file', self.ui_ff_file)],
+                    [('Gaussian version', self.ui_gaussian_version), ('MM program', self.ui_mm_version)]]
+        self.auto_grid(self.ui_external_frame, toolbar, resize_columns=(), padx=3, pady=3, sticky='we')
+        row += 1
+        self.canvas.rowconfigure(row, weight=1)
+    
+    def _trc_mm_external(self, *args):
+        if self.var_mm_external.get():
+            print('entra_true')
+        else:
+            print('entra false')
+
+    def OK(self, *args, **kwargs):
         self.Close()
