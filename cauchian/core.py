@@ -506,6 +506,7 @@ class Model(object):
             mapping[catom] = gatom
 
         show_warning = False
+        """
         try:
             assign_bond_orders(state['molecule'], engine='openbabel')
         except:
@@ -513,6 +514,7 @@ class Model(object):
                 assign_bond_orders(state['molecule'], engine='rdkit')
             except:
                 pass
+        """
         for catom, gatom in zip(chimera_atoms, gaussian_atoms):
             for cneighbor, bond in catom.bondsMap.items():
                 order = getattr(bond, 'order', None)
